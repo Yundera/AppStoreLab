@@ -117,12 +117,12 @@ x-casaos:
       **Música de Muestra Incluida:**
       Esta instalación incluye pistas de muestra para comenzar inmediatamente.
       
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Navidrome/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Navidrome/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Navidrome/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Navidrome/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Navidrome/screenshot-1.png
   index: /
   tagline:
     en_us: Your personal music streaming server with modern web interface

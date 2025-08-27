@@ -125,12 +125,12 @@ x-casaos:
   tagline:
     en_us: Build your Teams alternative with guided app installation
     ko_kr: 가이드를 통한 Teams 대안 구축
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nextcloud/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Nextcloud/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nextcloud/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nextcloud/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nextcloud/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nextcloud/thumbnail.png
   description:
     en_us: |
       **☁️ What is Nextcloud?**

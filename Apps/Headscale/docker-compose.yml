@@ -1,0 +1,140 @@
+name: headscale
+
+services:
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: headscale-nginx
+    cpu_shares: 10
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    environment:
+      TZ: $TZ
+      HEADSCALE_PASSWORD: $default_pwd
+    volumes:
+      - /DATA/AppData/headscale/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /DATA/AppData/headscale/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+    expose:
+      - 80  # Web UI (NSL router handles HTTPS)
+    depends_on:
+      - headscale-ui
+      - headscale
+    restart: unless-stopped
+    networks:
+      - headscale
+    # Default nginx startup - htpasswd file is pre-created and mounted
+
+  headscale-ui:
+    image: ghcr.io/gurucomputing/headscale-ui:latest
+    container_name: headscale-ui
+    hostname: headscale
+    cpu_shares: 10
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    environment:
+      TZ: $TZ
+      HTTP_PORT: 80
+    # No expose needed - accessed through nginx proxy
+    depends_on:
+      - headscale
+    restart: unless-stopped
+    networks:
+      - headscale
+
+  headscale:
+    image: headscale/headscale:v0.26.1
+    container_name: headscale
+    hostname: headscaleconnect
+    user: 0:0 # Run as root for full permissions
+    cpu_shares: 10
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    volumes:
+      - /DATA/AppData/headscale/config:/etc/headscale
+      - /DATA/AppData/headscale/data:/var/lib/headscale
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      TZ: $TZ
+      HEADSCALE_SERVER_URL: https://headscale-$DOMAIN
+      HEADSCALE_LISTEN_ADDR: 0.0.0.0:80
+      HEADSCALE_METRICS_LISTEN_ADDR: 0.0.0.0:9090
+    # No expose needed - accessed through nginx proxy
+    ports:
+      - "50443:50443"  # gRPC port for Tailscale client communication
+      - "9090:9090"    # Metrics port for monitoring
+      - "3478:3478/udp"  # STUN port for NAT traversal
+    command: ["serve"]
+    restart: unless-stopped
+    networks:
+      - headscale
+
+networks:
+  headscale:
+    driver: bridge
+
+x-casaos:
+  main: nginx
+  webui_port: 80
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/headscale/{config,data,nginx} &&
+    if [ ! -f /DATA/AppData/headscale/config/config.yaml ]; then
+      curl -s https://raw.githubusercontent.com/juanfont/headscale/v0.26.1/config-example.yaml -o /DATA/AppData/headscale/config/config.yaml &&
+      sed -i "s|server_url: http://127.0.0.1:8080|server_url: https://headscale-$DOMAIN|g" /DATA/AppData/headscale/config/config.yaml &&
+      sed -i "s|listen_addr: 127.0.0.1:8080|listen_addr: 0.0.0.0:8080|g" /DATA/AppData/headscale/config/config.yaml &&
+      sed -i "s|metrics_listen_addr: 127.0.0.1:9090|metrics_listen_addr: 0.0.0.0:9090|g" /DATA/AppData/headscale/config/config.yaml &&
+      sed -i "s|grpc_listen_addr: 127.0.0.1:50443|grpc_listen_addr: 0.0.0.0:50443|g" /DATA/AppData/headscale/config/config.yaml
+    fi &&
+    curl -s https://raw.githubusercontent.com/worph/AppStore/main/Apps/Headscale/pre-install/nginx.conf -o /DATA/AppData/headscale/nginx/nginx.conf &&
+    echo "admin:$(openssl passwd -apr1 "$default_pwd")" > /DATA/AppData/headscale/nginx/.htpasswd
+
+
+  architectures:
+    - amd64
+    - arm64
+  author: Yundera AppStore
+  category: Network
+  description:
+    en_us: "Complete Headscale setup with nginx proxy, server, and web UI. Headscale is an open source, self-hosted implementation of the Tailscale control server. This bundle includes the Headscale server for VPN coordination, a community-developed web interface for easy device management, and an nginx proxy with basic authentication and CORS support. Create secure mesh VPN connections between your devices without relying on Tailscale's servers - perfect for self-hosting enthusiasts."
+  developer: Juan Font
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Headscale/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Headscale/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Headscale/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Headscale/screenshot-3.png
+  tagline:
+    en_us: Self-hosted Tailscale control server - ready to use!
+  title:
+    en_us: Headscale
+  tips:
+    before_install:
+      en_us: |
+        **📱 After Installation:**
+        0. ** Genrate API Key**: 
+           - Go to the **Settings** tab of the Heasdscale application in CasaOS
+           - Open a terminal and run:
+             ```
+             headscale users create api
+             headscale apikeys create --user api --expiration never
+             ```
+           - Copy the generated API key for later use.
+        1. **Login to Web Interface**: 
+           - Visit `https://headscale-$domain.nsl.sh/web`
+           - Login with username: `admin`, password: (your default CasaOS password)
+           - Go to the **Settings** tab
+           - In web UI settings, enter:
+             - **Server URL**: `https://headscale-$domain.nsl.sh` (note: now goes through nginx)
+             - **API Key**: (from command above)
+        
+        2. **Connect Devices**: Use this command on your devices:
+           ```
+           tailscale up --login-server https://headscale-$domain.nsl.sh
+           ```
+        3. **Approve Devices**: Use the web UI to approve new device connections

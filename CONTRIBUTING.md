@@ -29,7 +29,7 @@ Before submitting your PR, ensure your app meets these requirements:
 ### Documentation Checklist
 - [ ] Clear description of the application
 - [ ] Volume and environment variable descriptions
-- [ ] Icon and screenshots meet specifications - files and URLs point to this Yundera repository (eg https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Duplicati/thumbnail.png)
+- [ ] Icon and screenshots meet specifications - files and URLs point to this Yundera AppStoreLab repository (eg https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Duplicati/thumbnail.png)
 
 ## Testing and Submit Process
 
@@ -358,10 +358,10 @@ Each directory under [Apps](Apps) corresponds to a Compose App. The directory sh
         description:                    # multiple locales are supported
             en_us: Syncthing is a continuous file synchronization program. It synchronizes files between two or more computers in real time, safely protected from prying eyes. Your data is your data alone and you deserve to choose where it is stored, whether it is shared with some third party, and how it's transmitted over the internet.
         developer: Syncthing
-        icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Syncthing/icon.png
+        icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Syncthing/icon.png
         tagline:                        # multiple locales are supported
             en_us: Free, secure, and distributed file synchronisation tool.
-        thumbnail: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/Jellyfin/thumbnail.jpg
+        thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Jellyfin/thumbnail.png
         title:                          # multiple locales are supported
             en_us: Syncthing
         tips:

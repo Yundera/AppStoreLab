@@ -4,6 +4,10 @@
 
 AppStoreLab is the testing ground companion to our [main AppStore](https://github.com/Yundera/AppStore). Here, developers can publish experimental apps, alpha builds, and innovative projects without the strict verification requirements of the main store.
 
+**Repository**: [https://github.com/Yundera/AppStoreLab](https://github.com/Yundera/AppStoreLab)
+
+> **Note**: All asset links (icons, screenshots, thumbnails) in this repository should point to `https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/[AppName]/[asset]` rather than the main AppStore repository.
+
 ## What makes this different?
 
 - **Relaxed verification** - Faster approval process for experimental apps
