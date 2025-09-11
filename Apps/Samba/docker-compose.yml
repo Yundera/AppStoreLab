@@ -104,13 +104,20 @@ x-casaos:
         | `admin`    | `$default_pwd` | DATA  |
         
         Network Access Instructions:
-        • Windows: File Explorer → Network → \\${public_ip:-ip_or_host}\DATA
-        • macOS: Finder → Go → Connect to Server → smb://${public_ip:-ip_or_host}/DATA
-        • Linux: Files → Other Locations → smb://${public_ip:-ip_or_host}/DATA
+        • Windows: File Explorer → Network → \\ip_or_host\DATA
+        • macOS: Finder → Go → Connect to Server → smb://ip_or_host/DATA
+        • Linux: Files → Other Locations → smb://ip_or_host/DATA
         
-        Port Requirements:
-        • SMB: 445 (primary)
         
         Note: SMB runs on standard network ports (445) for native OS integration. No web interface is provided as SMB integrates directly with your operating system's file manager.
+        
+        In the settings page you can bind the port to a specific IP address if needed.
+        | Host       | Container   |
+        | --------   | ------------|
+        | <ip>:445   | 445         |
+        
+        VPN integration:
+        Using tailscale app : run `tailscale ip -4` to get the tailscale ip address and use that to bind samba server to tailscale only.
+
   title:
     en_us: Samba
