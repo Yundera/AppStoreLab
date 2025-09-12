@@ -12,8 +12,6 @@ services:
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
     environment:
-      PUID: $PUID
-      PGID: $PGID
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
