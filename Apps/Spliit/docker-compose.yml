@@ -1,0 +1,218 @@
+name: spliit
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: spliit-db
+    user: 0:0
+    environment:
+      POSTGRES_DB: spliit
+      POSTGRES_USER: spliit
+      POSTGRES_PASSWORD: $default_pwd
+      PUID: $PUID
+      PGID: $PGID
+    volumes:
+      - /DATA/AppData/$AppID/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - spliit_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  spliit:
+    image: crazymax/spliit:1.14.1
+    container_name: spliit
+    user: 0:0
+    depends_on:
+      - db
+    expose:
+      - 3000
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: spliit
+      POSTGRES_USER: spliit
+      POSTGRES_PASSWORD: $default_pwd
+      POSTGRES_TIMEOUT: 60
+      API_PORT: 3000
+    volumes:
+      - /DATA/AppData/$AppID/data:/data
+    restart: unless-stopped
+    networks:
+      - spliit_network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+networks:
+  spliit_network:
+    driver: bridge
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: spliit
+  webui_port: 3000
+  author: CasaOS Team
+  category: Finance
+  developer: Spliit Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Spliit/Plex/thumbnail.png
+  title:
+    en_us: Spliit
+  tagline:
+    en_us: Free and Open Source Expense Sharing App
+    ko_kr: 무료 오픈소스 비용 분할 앱
+    zh_cn: 免费开源费用分摊应用
+    es_es: Aplicación Gratuita para Compartir Gastos
+    fr_fr: Application Gratuite de Partage de Dépenses  
+  index: /
+  pre_install_cmd: |
+    mkdir -p /DATA/AppData/$AppID/postgres /DATA/AppData/$AppID/data && 
+    chown -R 999:999 /DATA/AppData/$AppID/postgres && 
+    chown -R 0:0 /DATA/AppData/$AppID/data
+  description:
+    en_us: |
+      **Split expenses with friends - no signup, no hassle**
+      
+      Spliit is the simplest way to share expenses. Whether splitting dinner bills, vacation costs, or household expenses, everyone can see who owes what instantly. No accounts needed - just create a group and share the link.
+      
+      **Key features:**
+      • Create expense groups in seconds
+      • Add participants by name only
+      • Split by percentage, shares, or exact amounts
+      • See optimized settlements (who pays whom)
+      • Works on any device
+      • Complete privacy - data stays on your server
+      
+      **Perfect for:** Roommates splitting rent, friends sharing vacation costs, couples managing household expenses, group dinners, or any shared activity.
+    ko_kr: |
+      **친구와 비용 분할 - 가입 없이, 번거로움 없이**
+      
+      Spliit은 비용을 공유하는 가장 간단한 방법입니다. 저녁 식사비, 휴가 비용, 가계 지출 등 누가 얼마를 빚졌는지 즉시 확인할 수 있습니다. 계정이 필요 없습니다 - 그룹을 만들고 링크를 공유하기만 하면 됩니다.
+      
+      **주요 기능:**
+      • 몇 초 만에 비용 그룹 생성
+      • 이름만으로 참가자 추가
+      • 비율, 몫 또는 정확한 금액으로 분할
+      • 최적화된 정산 확인 (누가 누구에게 지불)
+      • 모든 기기에서 작동
+      • 완전한 프라이버시 - 데이터는 서버에 보관
+      
+      **이런 경우에 완벽해요:** 룸메이트 월세 분할, 친구들과 휴가 비용 공유, 부부 가계 관리, 단체 저녁 식사, 또는 모든 공유 활동.
+    zh_cn: |
+      **与朋友分摊费用 - 无需注册，没有麻烦**
+      
+      Spliit 是分摊费用最简单的方式。无论是分摊晚餐账单、度假费用还是家庭开支，每个人都能立即看到谁欠谁多少。无需账户 - 只需创建群组并分享链接。
+      
+      **主要功能：**
+      • 几秒钟创建费用群组
+      • 仅通过姓名添加参与者
+      • 按百分比、份额或确切金额分摊
+      • 查看优化的结算（谁付给谁）
+      • 在任何设备上工作
+      • 完全隐私 - 数据保存在您的服务器上
+      
+      **完美适合：** 室友分摊房租、朋友分享度假费用、夫妻管理家庭开支、团体晚餐或任何共享活动。
+    es_es: |
+      **Divide gastos con amigos - sin registro, sin complicaciones**
+      
+      Spliit es la forma más simple de compartir gastos. Ya sea dividiendo cuentas de cena, costos de vacaciones o gastos del hogar, todos pueden ver quién debe qué al instante. No necesitas cuentas - solo crea un grupo y comparte el enlace.
+      
+      **Características clave:**
+      • Crea grupos de gastos en segundos
+      • Añade participantes solo con nombres
+      • Divide por porcentaje, partes o cantidades exactas
+      • Ve liquidaciones optimizadas (quién paga a quién)
+      • Funciona en cualquier dispositivo
+      • Privacidad completa - los datos permanecen en tu servidor
+      
+      **Perfecto para:** Compañeros dividiendo renta, amigos compartiendo costos de vacaciones, parejas manejando gastos del hogar, cenas grupales o cualquier actividad compartida.
+    fr_fr: |
+      **Partagez les dépenses avec vos amis - sans inscription, sans tracas**
+      
+      Spliit est le moyen le plus simple de partager les dépenses. Qu'il s'agisse de diviser l'addition du dîner, les frais de vacances ou les dépenses du foyer, chacun peut voir instantanément qui doit quoi. Aucun compte nécessaire - créez simplement un groupe et partagez le lien.
+      
+      **Fonctionnalités clés:**
+      • Créez des groupes de dépenses en quelques secondes
+      • Ajoutez des participants par nom uniquement
+      • Divisez par pourcentage, parts ou montants exacts
+      • Voyez les règlements optimisés (qui paie qui)
+      • Fonctionne sur n'importe quel appareil
+      • Confidentialité totale - les données restent sur votre serveur
+      
+      **Parfait pour:** Colocataires partageant le loyer, amis partageant les frais de vacances, couples gérant les dépenses du foyer, dîners de groupe ou toute activité partagée.
+  tips:
+    before_install:
+      en_us: |
+        **How to use:**
+        1. Click "Create a group"
+        2. Name it (e.g., "Beach Trip 2024")
+        3. Add people (just their names)
+        4. Start adding expenses:
+          • Who paid: John
+          • Amount: $120
+          • Split between: Everyone
+        5. Check "Balances" to see who owes whom
+        
+        Share the group link with friends - no signup needed!
+      ko_kr: |
+        **사용 방법:**
+        1. "그룹 만들기" 클릭
+        2. 이름 지정 (예: "제주도 여행 2024")
+        3. 사람 추가 (이름만)
+        4. 비용 추가 시작:
+          • 누가 지불: 철수
+          • 금액: 120,000원
+          • 분할: 모든 사람
+        5. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
+        
+        친구들과 그룹 링크 공유 - 가입 필요 없음!
+      zh_cn: |
+        **使用方法：**
+        1. 点击"创建群组"
+        2. 命名（例如："2024海滩之旅"）
+        3. 添加人员（只需姓名）
+        4. 开始添加费用：
+          • 谁支付：小明
+          • 金额：¥120
+          • 分摊给：所有人
+        5. 查看"余额"了解谁欠谁
+        
+        与朋友分享群组链接 - 无需注册！
+      es_es: |
+        **Cómo usar:**
+        1. Haz clic en "Crear un grupo"
+        2. Nómbralo (ej: "Viaje Playa 2024")
+        3. Añade personas (solo nombres)
+        4. Empieza a añadir gastos:
+          • Quién pagó: Juan
+          • Cantidad: €120
+          • Dividir entre: Todos
+        5. Revisa "Saldos" para ver quién debe a quién
+        
+        ¡Comparte el enlace del grupo - sin registro!
+      fr_fr: |
+        **Comment utiliser:**
+        1. Cliquez sur "Créer un groupe"
+        2. Nommez-le (ex: "Voyage Plage 2024")
+        3. Ajoutez des personnes (juste les noms)
+        4. Commencez à ajouter des dépenses:
+          • Qui a payé: Jean
+          • Montant: 120€
+          • Partager entre: Tout le monde
+        5. Vérifiez "Soldes" pour voir qui doit à qui
+        
+        Partagez le lien du groupe - aucune inscription!
