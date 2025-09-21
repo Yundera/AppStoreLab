@@ -17,9 +17,7 @@ services:
       GID: $PGID
       RW: "true"
     volumes:
-      - type: bind
-        source: /DATA
-        target: /storage
+      - /DATA:/storage:rshared,z
     ports:
       - 445:445
     deploy:
