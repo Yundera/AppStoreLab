@@ -6,6 +6,13 @@ services:
     network_mode: bridge
     restart: unless-stopped
     user: 0:0  # Run as root for full permissions
+
+    # Needed for FUSE support
+    cap_add:
+       - SYS_ADMIN
+    devices:
+       - /dev/fuse
+
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -17,7 +24,12 @@ services:
       GID: $PGID
       RW: "true"
     volumes:
-      - /DATA:/storage:rshared,z
+      - type: bind
+        source: /DATA
+        target: /storage
+        bind:
+          # Needed for FUSE support
+          propagation: rslave
     ports:
       - "0.0.0.0:445:445"
     deploy:
