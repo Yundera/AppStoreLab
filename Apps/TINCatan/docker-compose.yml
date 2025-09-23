@@ -46,11 +46,11 @@ x-casaos:
   category: Games
   author: CasaOS Team
   developer: Sean Segal & Contributors
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TincCatan/icon.png
-  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TincCatan/screenshot-1.png
-  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TincCatan/screenshot-2.png
-  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TincCatan/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TincCatan/thumbnail.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TINCatan/icon.png
+  screenshot_1: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TINCatan/screenshot-1.png
+  screenshot_2: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TINCatan/screenshot-2.png
+  screenshot_3: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TINCatan/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/TINCatan/thumbnail.png
   pre-install-cmd: |
     mkdir -p /DATA/AppData/tincatan/app &&
     mkdir -p /DATA/AppData/tincatan/m2 &&
