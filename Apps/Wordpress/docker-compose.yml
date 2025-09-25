@@ -12,6 +12,8 @@ services:
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
     environment:
+      PUID: $PUID
+      PGID: $PGID
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
@@ -23,8 +25,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 1G
 
   db:
     image: mariadb:10.11
@@ -44,9 +45,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
-
+          memory: 1G
 x-casaos:
   architectures:
     - amd64
@@ -54,12 +53,12 @@ x-casaos:
   author: CasaOS Team
   category: Web
   developer: WordPress Foundation
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Wordpress/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Wordpress/thumbnail.png
   index: /
   tagline:
     en_us: Create beautiful websites with ease
