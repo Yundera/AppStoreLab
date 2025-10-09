@@ -2,31 +2,42 @@ name: plex
 
 services:
   plex:
-    image: lscr.io/linuxserver/plex:1.41.8.9834-071366D65-ls269
+    image: lscr.io/linuxserver/plex:1.42.2.10156-f737b826c-ls280
     container_name: plex
-    restart: unless-stopped
     expose:
       - 32400
+    #ports:
+    # Additional ports can be uncommented if needed for specific Plex features
+    #  - "3005:3005/tcp"      # Plex Home Theater via Plex Companion
+    #  - "8324:8324/tcp"      # Plex for Roku via Plex Companion  
+    #  - "32469:32469/tcp"    # Plex DLNA Server
+    #  - "1900:1900/udp"      # Plex DLNA Server
+    #  - "32410:32410/udp"    # GDM network discovery
+    #  - "32412:32412/udp"    # GDM network discovery
+    #  - "32413:32413/udp"    # GDM network discovery
+    #  - "32414:32414/udp"    # GDM network discovery
     volumes:
-      - /DATA/AppData/$AppID:/config
+      - /DATA/AppData/$AppID/config:/config
       - /DATA/AppData/$AppID/transcode:/transcode
       - /DATA/Media/Movies:/data/movies
       - /DATA/Media/TV Shows:/data/tvshows
       - /DATA/Media/Music:/data/music
       - /DATA/Downloads:/data/downloads
+    user: 0:0
     environment:
-      PGID: $PGID
-      PUID: $PUID
-      TZ: $TZ
-      PLEX_CLAIM: ""
+      PGID: $PGID                    # Group ID for file permissions
+      PUID: $PUID                    # User ID for file permissions
+      TZ: $TZ                        # Timezone setting
       VERSION: docker
+      PLEX_CLAIM: ""                   # Plex claim token for automatic setup (optional)
+      ADVERTISE_IP: "https://$domain/"
+    restart: unless-stopped
     devices:
-      - /dev/dri:/dev/dri
+      - /dev/dri:/dev/dri            # Hardware acceleration for transcoding
     deploy:
       resources:
         limits:
           memory: 1G
-          cpus: '0.5'
 
 x-casaos:
   architectures:
@@ -60,13 +71,13 @@ x-casaos:
       **개인 미디어 설정 필요:** Plex를 계정에 연결하고 개인 파일을 스트리밍하려면 설치 중에 **Plex 클레임 토큰**을 입력해야 합니다. 단계별 가이드를 따르세요: 👉Yundera에서 Plex 설정하는 방법 (https://www.yundera.com/blog/tutorial-1/how-to-setup-plex-17)
       💡 계정이나 구독이 필요 없는 완전히 무료인 오픈소스 대안으로는 **Jellyfin**을 사용해보세요.
       ℹ️ Yundera는 Plex와 관련이 없으며 해당 서비스나 가격을 통제하지 않습니다.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/icon.png
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/thumbnail.png
-  index: /web
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Plex/thumbnail.png
+  index: /
   tagline:
     en_us: Your personal streaming service for all your media
     zh_cn: 您的个人媒体流媒体服务
