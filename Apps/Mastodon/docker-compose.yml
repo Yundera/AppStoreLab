@@ -1,0 +1,264 @@
+name: mastodon
+
+services:
+  db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    user: "0:0"
+    environment:
+      POSTGRES_USER: mastodon
+      POSTGRES_PASSWORD: mastodon_default_password_change_me
+      POSTGRES_DB: mastodon_production
+    volumes:
+      - /DATA/AppData/mastodon/postgres/:/var/lib/postgresql/data/
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'mastodon']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mastodon-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    user: "0:0"
+    volumes:
+      - /DATA/AppData/mastodon/redis/:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mastodon-network
+
+  mastodon:
+    image: nginx:alpine
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 10
+    volumes:
+      - /DATA/AppData/mastodon/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    expose:
+      - 80
+    depends_on:
+      mastodon-backend:
+        condition: service_healthy
+      streaming:
+        condition: service_healthy
+    networks:
+      - mastodon-network
+
+  mastodon-backend:
+    image: ghcr.io/mastodon/mastodon:v4.4.4
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 70
+    container_name: mastodon-backend
+    environment:
+      - LOCAL_DOMAIN=${LOCAL_DOMAIN}
+      - WEB_DOMAIN=${WEB_DOMAIN}
+      - SINGLE_USER_MODE=${SINGLE_USER_MODE}
+      - STREAMING_API_BASE_URL=${STREAMING_API_BASE_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_NAME=${DB_NAME}
+      - DB_PASS=${DB_PASS}
+      - DB_PORT=${DB_PORT}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - OTP_SECRET=${OTP_SECRET}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=${ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}
+      - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=${ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT}
+      - ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=${ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}
+      - RAILS_ENV=${RAILS_ENV}
+      - RAILS_SERVE_STATIC_FILES=${RAILS_SERVE_STATIC_FILES}
+      - RAILS_LOG_LEVEL=${RAILS_LOG_LEVEL}
+      - PAPERCLIP_ROOT_PATH=${PAPERCLIP_ROOT_PATH}
+      - PREPARED_STATEMENTS=${PREPARED_STATEMENTS}
+      - MAX_TOOT_CHARS=${MAX_TOOT_CHARS}
+      - TRUSTED_PROXY_IP=${TRUSTED_PROXY_IP}
+      - RAILS_FORCE_SSL=${RAILS_FORCE_SSL}
+    command: bash -c 'rm -f /mastodon/tmp/pids/server.pid && bundle exec rails s -p 3000 -b 0.0.0.0'
+    volumes:
+      - /DATA/AppData/mastodon/public/system/:/mastodon/public/system
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:3000/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - mastodon-network
+
+  streaming:
+    image: ghcr.io/mastodon/mastodon-streaming:v4.4.4
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 30
+    environment:
+      - LOCAL_DOMAIN=${LOCAL_DOMAIN}
+      - STREAMING_API_BASE_URL=${STREAMING_API_BASE_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_NAME=${DB_NAME}
+      - DB_PASS=${DB_PASS}
+      - DB_PORT=${DB_PORT}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - OTP_SECRET=${OTP_SECRET}
+    command: node ./streaming/index.js
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider --proxy=off localhost:4000/api/v1/streaming/health || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - mastodon-network
+
+  sidekiq:
+    image: ghcr.io/mastodon/mastodon:v4.4.4
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 50
+    environment:
+      - LOCAL_DOMAIN=${LOCAL_DOMAIN}
+      - SINGLE_USER_MODE=${SINGLE_USER_MODE}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_NAME=${DB_NAME}
+      - DB_PASS=${DB_PASS}
+      - DB_PORT=${DB_PORT}
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
+      - OTP_SECRET=${OTP_SECRET}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY=${ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY}
+      - ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT=${ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT}
+      - ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY=${ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY}
+      - RAILS_ENV=${RAILS_ENV}
+      - PAPERCLIP_ROOT_PATH=${PAPERCLIP_ROOT_PATH}
+      - PREPARED_STATEMENTS=${PREPARED_STATEMENTS}
+    command: bundle exec sidekiq
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', "ps aux | grep '[s]idekiq 6' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - mastodon-network
+
+networks:
+  mastodon-network:
+    driver: bridge
+
+x-casaos:
+  index: /
+  webui_port: 80
+  main: mastodon
+
+  # Pre-install command generates all required secrets and stores persistent config - Keep it idempotent!
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/casaos/apps/mastodon/ /DATA/AppData/mastodon/ &&
+    touch /DATA/AppData/casaos/apps/mastodon/.env &&
+    chown -R $PUID:$PGID /DATA/AppData/casaos/apps/mastodon/ || true &&
+    chown -R $PUID:$PGID /DATA/AppData/mastodon/ || true &&
+    wget -O /DATA/AppData/mastodon/mastodon-pre-install.sh https://raw.githubusercontent.com/yundera/AppStoreLab/main/Apps/Mastodon/install/pre-install.sh &&
+    chmod +x /DATA/AppData/mastodon/mastodon-pre-install.sh &&
+    bash /DATA/AppData/mastodon/mastodon-pre-install.sh &&
+    wget -O /DATA/AppData/mastodon/nginx.conf https://raw.githubusercontent.com/yundera/AppStoreLab/main/Apps/Mastodon/install/nginx.conf &&
+    chown $PUID:$PGID /DATA/AppData/mastodon/nginx.conf || true
+
+  icon: https://cdn.jsdelivr.net/gh/yundera/AppStoreLab@main/Apps/Mastodon/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/yundera/AppStoreLab@main/Apps/Mastodon/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/yundera/AppStoreLab@main/Apps/Mastodon/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/yundera/AppStoreLab@main/Apps/Mastodon/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/yundera/AppStoreLab@main/Apps/Mastodon/screenshot-1.png
+
+  architectures:
+    - amd64
+    - arm64
+  author: Worph Team
+  category: Communication
+  description:
+    en_us: Decentralized social network server. Join the fediverse and connect with millions across independent servers. Share posts, photos, videos, and follow anyone across the network. Ad-free, algorithm-free, and community-owned.
+    fr_fr: Serveur de réseau social décentralisé. Rejoignez le fediverse et connectez-vous avec des millions d'utilisateurs sur des serveurs indépendants. Partagez des posts, photos, vidéos et suivez n'importe qui sur le réseau. Sans publicité, sans algorithme, et géré par la communauté.
+    ko_kr: 탈중앙화 소셜 네트워크 서버. 페디버스에 가입하여 독립적인 서버의 수백만 명과 연결하세요. 게시물, 사진, 비디오를 공유하고 네트워크 전체의 누구든 팔로우할 수 있습니다. 광고 없음, 알고리즘 없음, 커뮤니티 소유.
+    zh_cn: 去中心化社交网络服务器。加入联邦宇宙，与独立服务器上的数百万人连接。分享帖子、照片、视频，并关注网络中的任何人。无广告、无算法，由社区拥有。
+    es_es: Servidor de red social descentralizada. Únete al fediverso y conéctate con millones en servidores independientes. Comparte publicaciones, fotos, videos y sigue a cualquiera en la red. Sin anuncios, sin algoritmos y propiedad de la comunidad.
+    de_de: Dezentraler Social-Network-Server. Treten Sie dem Fediverse bei und verbinden Sie sich mit Millionen auf unabhängigen Servern. Teilen Sie Beiträge, Fotos, Videos und folgen Sie jedem im Netzwerk. Werbefrei, algorithmusfrei und gemeinschaftseigen.
+  developer: Mastodon gGmbH
+  tagline:
+    en_us: Decentralized social network - join the fediverse
+    fr_fr: Réseau social décentralisé - rejoignez le fediverse
+    ko_kr: 탈중앙화 소셜 네트워크 - 페디버스에 가입하세요
+    zh_cn: 去中心化社交网络 - 加入联邦宇宙
+    es_es: Red social descentralizada - únete al fediverso
+    de_de: Dezentrales soziales Netzwerk - treten Sie dem Fediverse bei
+  title:
+    en_us: Mastodon
+
+  tips:
+    before_install:
+      en_us: |
+        **Fully Automated Installation**
+
+        Everything is automated - just click install!
+
+        **What happens automatically:**
+        - Configuration directory creation
+        - Secret keys generation (SECRET_KEY_BASE, OTP_SECRET)
+        - VAPID keys generation for web push notifications
+        - Database setup and migrations
+        - Admin account creation with username "admin"
+        - Environment file configured with your domain
+
+        **Default Login Credentials:**
+        - Username: `admin`
+        - Email: `$PCS_EMAIL`
+        - Password: `$PCS_DEFAULT_PASSWORD`
+
+        **⚠️ IMPORTANT - SECURITY:**
+        1. Access your instance at `https://mastodon-$PCS_DOMAIN`
+        2. Log in with username `admin` and password `$PCS_DEFAULT_PASSWORD`
+        3. **IMMEDIATELY change your password** in Settings → Account → Change Password
+        4. The default password is shared across all apps - you must change it for security!
+        5. Complete your profile setup
+        6. Configure server settings in Admin panel
+
+        **Configuration Files:**
+        - Environment: `/DATA/AppData/casaos/apps/mastodon/.env`
+        - Nginx config: `/DATA/AppData/mastodon/nginx.conf`
+
+        **Optional: Email Notifications**
+        To enable email notifications, edit `/DATA/AppData/casaos/apps/mastodon/.env`:
+        ```
+        SMTP_SERVER=smtp.your-provider.com
+        SMTP_PORT=587
+        SMTP_LOGIN=your@email.com
+        SMTP_PASSWORD=your_smtp_password
+        SMTP_FROM_ADDRESS=notifications@mastodon-$domain
+        ```
+        Then restart: `docker restart mastodon-backend mastodon-mastodon-streaming-1 mastodon-sidekiq-1`
