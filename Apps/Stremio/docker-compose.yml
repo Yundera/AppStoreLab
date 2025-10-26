@@ -123,7 +123,31 @@ x-casaos:
       cp /DATA/AppData/stremio/localStorage.json /DATA/AppData/stremio/web/build/localStorage.json
 
       # Inject auto-configuration script (runs once on first load)
-      sed -i 's|</head>|<script>if(!localStorage.getItem("stremio_configured")){fetch("/localStorage.json").then(r=>r.text()).then(data=>{localStorage.clear();const parsed=JSON.parse(data.replaceAll("DYNAMIC_SERVER_URL_PLACEHOLDER",window.location.origin+"/"));Object.keys(parsed).forEach(key=>localStorage.setItem(key,JSON.stringify(parsed[key])));localStorage.setItem("stremio_configured","true");console.log("Stremio configured for:",window.location.origin);window.location.reload()})}</script></head>|' /DATA/AppData/stremio/web/build/index.html
+      cat > /tmp/stremio-basic-script.js <<'JSEOF'
+    if(!localStorage.getItem("stremio_configured")){
+      fetch("/localStorage.json").then(r=>r.text()).then(data=>{
+        localStorage.clear();
+        const parsed=JSON.parse(data.replaceAll("DYNAMIC_SERVER_URL_PLACEHOLDER",window.location.origin+"/"));
+        Object.keys(parsed).forEach(key=>localStorage.setItem(key,JSON.stringify(parsed[key])));
+        localStorage.setItem("stremio_configured","true");
+        console.log("Stremio configured for:",window.location.origin);
+        window.location.reload();
+      });
+    }
+    JSEOF
+
+      # Inject using reliable split-and-concatenate method
+      grep -o '.*</head>' /DATA/AppData/stremio/web/build/index.html | sed 's|</head>||' > /tmp/before-head.html
+      grep -o '</head>.*' /DATA/AppData/stremio/web/build/index.html > /tmp/after-head.html
+
+      cat /tmp/before-head.html > /tmp/stremio-index-new.html
+      echo '<script>' >> /tmp/stremio-index-new.html
+      cat /tmp/stremio-basic-script.js >> /tmp/stremio-index-new.html
+      echo '</script>' >> /tmp/stremio-index-new.html
+      cat /tmp/after-head.html >> /tmp/stremio-index-new.html
+
+      mv /tmp/stremio-index-new.html /DATA/AppData/stremio/web/build/index.html
+      rm /tmp/stremio-basic-script.js /tmp/before-head.html /tmp/after-head.html
     fi
 
     # Create nginx reverse proxy configuration
