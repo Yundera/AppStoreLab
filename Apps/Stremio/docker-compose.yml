@@ -136,18 +136,20 @@ x-casaos:
     }
     JSEOF
 
-      # Inject using reliable split-and-concatenate method
-      grep -o '.*</head>' /DATA/AppData/stremio/web/build/index.html | sed 's|</head>||' > /tmp/before-head.html
-      grep -o '</head>.*' /DATA/AppData/stremio/web/build/index.html > /tmp/after-head.html
+      # Inject using Python (handles minified HTML perfectly)
+      python3 <<'PYEOF'
+    with open('/DATA/AppData/stremio/web/build/index.html', 'r') as f:
+        html = f.read()
+    with open('/tmp/stremio-basic-script.js', 'r') as f:
+        script = f.read()
+    # Replace first occurrence of </head> with script + </head>
+    html = html.replace('</head>', '<script>\n' + script + '\n</script>\n</head>', 1)
+    with open('/DATA/AppData/stremio/web/build/index.html', 'w') as f:
+        f.write(html)
+    print('[Pre-install] Script injected successfully')
+    PYEOF
 
-      cat /tmp/before-head.html > /tmp/stremio-index-new.html
-      echo '<script>' >> /tmp/stremio-index-new.html
-      cat /tmp/stremio-basic-script.js >> /tmp/stremio-index-new.html
-      echo '</script>' >> /tmp/stremio-index-new.html
-      cat /tmp/after-head.html >> /tmp/stremio-index-new.html
-
-      mv /tmp/stremio-index-new.html /DATA/AppData/stremio/web/build/index.html
-      rm /tmp/stremio-basic-script.js /tmp/before-head.html /tmp/after-head.html
+      rm /tmp/stremio-basic-script.js
     fi
 
     # Create nginx reverse proxy configuration
