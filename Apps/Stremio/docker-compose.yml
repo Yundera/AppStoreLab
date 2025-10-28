@@ -36,6 +36,7 @@ services:
         source: $DATA_ROOT/AppData/stremio/web/build
         target: /usr/share/nginx/html
         read_only: true
+      - stremio_dynamic_paths:/tmp/dynamic_paths
     tmpfs:
       - /var/cache/nginx
       - /var/run
@@ -61,8 +62,12 @@ services:
       BACKEND_HOST: "stremioweb"
       BACKEND_PORT: "8080"
       LISTEN_PORT: "3000"
-      ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,ico,svg,woff,woff2,ttf,eot,webp,map,json,wasm,html"
-      ALLOWED_PATHS: "settings,casting,network-info,device-info"
+      ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,ico,svg,woff,woff2,ttf,eot,webp,map,json,wasm,html,m3u8,ts"
+      ALLOWED_PATHS: "settings,casting,network-info,device-info,hlsv2"
+      DYNAMIC_PATHS_FILE: "/tmp/dynamic_paths/allowed.txt"
+      DYNAMIC_PATHS_TTL: "300"
+    volumes:
+      - stremio_dynamic_paths:/tmp/dynamic_paths
     depends_on:
       - stremioweb
     networks:
@@ -81,6 +86,10 @@ services:
         - container: ALLOWED_PATHS
           description:
             en_us: "API paths allowed without auth (required for Stremio functionality)"
+
+volumes:
+  stremio_dynamic_paths:
+    driver: local
 
 networks:
   pcs:
