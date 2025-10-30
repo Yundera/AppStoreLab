@@ -5,32 +5,32 @@ services:
     image: wordpress:6.7-apache
     container_name: wordpress_app
     restart: unless-stopped
-    # WordPress도 루트로 실행 (파일 복사 문제 해결)
     user: 0:0
     expose:
       - 80
     volumes:
       - /DATA/AppData/$AppID/html:/var/www/html
     environment:
+      PUID: $PUID
+      PGID: $PGID
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: $default_pwd
       WORDPRESS_DB_NAME: wordpress
-      WORDPRESS_SITE_URL: https://wordpress-ikjunyundera.nsl.sh
-      WORDPRESS_HOME: https://wordpress-ikjunyundera.nsl.sh
+      WORDPRESS_SITE_URL: https://$domain
+      WORDPRESS_HOME: https://$domain
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 1G
 
   db:
     image: mariadb:10.11
     container_name: wordpress_db
     restart: unless-stopped
-    # MariaDB는 루트로 실행 (AppData 전용이므로 허용됨)
     user: 0:0
     volumes:
       - /DATA/AppData/$AppID/db:/var/lib/mysql
@@ -41,11 +41,16 @@ services:
       MYSQL_PASSWORD: $default_pwd
       MARIADB_AUTO_UPGRADE: 1
       MARIADB_DISABLE_UPGRADE_BACKUP: 1
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 1G
 
 x-casaos:
   architectures:
@@ -68,7 +73,7 @@ x-casaos:
     fr_fr: Créez facilement de beaux sites web
     es_es: Crea hermosos sitios web con facilidad
   title:
-    en_us: WordPress
+    en_us: Wordpress
   store_app_id: wordpress
   main: wordpress
   webui_port: 80
@@ -151,12 +156,22 @@ x-casaos:
   tips:
     before_install:
       en_us: |
+        **⚠️ IMPORTANT: First-time Setup Required**
+        
+        After installation, you MUST access WordPress directly via this URL to complete setup:
+        👉 **https://$domain**
+        
+        The app icon won't work until you complete the WordPress installation wizard.
+        After setup is complete, you can use the app icon normally.
+        
+        ---
+        
         **Quick Setup (5 minutes):**
-        1. Open the app after installation
+        1. Visit https://$domain after installation
         2. Choose your language
         3. Fill in: Site Title, Username, Password, Email
         4. Click "Install WordPress"
-        5. Done! Start building your website
+        5. Done! Now you can use the app icon to access your site
         
         **First things to do:**
         • Pick a theme (Appearance → Themes)
@@ -165,12 +180,22 @@ x-casaos:
         
         The database is already configured automatically.
       ko_kr: |
+        **⚠️ 중요: 최초 설정 필수**
+        
+        설치 후, WordPress 설정을 완료하려면 반드시 이 URL로 직접 접속하세요:
+        👉 **https://$domain**
+        
+        WordPress 설치 마법사를 완료하기 전까지는 앱 아이콘이 작동하지 않습니다.
+        설정 완료 후에는 앱 아이콘으로 정상 접속 가능합니다.
+        
+        ---
+        
         **빠른 설정 (5분):**
-        1. 설치 후 앱 열기
+        1. 설치 후 https://$domain 접속
         2. 언어 선택
         3. 입력: 사이트 제목, 사용자명, 비밀번호, 이메일
         4. "WordPress 설치" 클릭
-        5. 완료! 웹사이트 만들기 시작
+        5. 완료! 이제 앱 아이콘으로 사이트 접속 가능
         
         **처음 할 일:**
         • 테마 선택 (외모 → 테마)
@@ -179,12 +204,22 @@ x-casaos:
         
         데이터베이스는 이미 자동으로 구성되어 있습니다.
       zh_cn: |
+        **⚠️ 重要：首次设置必需**
+        
+        安装后，您必须通过此 URL 直接访问以完成设置：
+        👉 **https://$domain**
+        
+        在完成 WordPress 安装向导之前，应用图标将无法使用。
+        设置完成后，您可以正常使用应用图标。
+        
+        ---
+        
         **快速设置（5分钟）：**
-        1. 安装后打开应用
+        1. 安装后访问 https://$domain
         2. 选择您的语言
         3. 填写：站点标题、用户名、密码、电子邮件
         4. 点击"安装 WordPress"
-        5. 完成！开始建立您的网站
+        5. 完成！现在可以使用应用图标访问您的站点
         
         **首先要做的事：**
         • 选择主题（外观 → 主题）
@@ -193,12 +228,22 @@ x-casaos:
         
         数据库已自动配置。
       es_es: |
+        **⚠️ IMPORTANTE: Configuración inicial requerida**
+        
+        Después de la instalación, DEBE acceder a WordPress directamente mediante esta URL para completar la configuración:
+        👉 **https://$domain**
+        
+        El ícono de la aplicación no funcionará hasta que complete el asistente de instalación de WordPress.
+        Una vez completada la configuración, puede usar el ícono de la aplicación normalmente.
+        
+        ---
+        
         **Configuración rápida (5 minutos):**
-        1. Abre la app después de la instalación
+        1. Visita https://$domain después de la instalación
         2. Elige tu idioma
         3. Completa: Título del sitio, Usuario, Contraseña, Email
         4. Haz clic en "Instalar WordPress"
-        5. ¡Listo! Empieza a construir tu sitio
+        5. ¡Listo! Ahora puedes usar el ícono de la app para acceder a tu sitio
         
         **Primeras cosas por hacer:**
         • Elige un tema (Apariencia → Temas)
@@ -207,14 +252,24 @@ x-casaos:
         
         La base de datos ya está configurada automáticamente.
       fr_fr: |
-        **Configuration rapide (5 minutes):**
-        1. Ouvrez l'app après l'installation
-        2. Choisissez votre langue
-        3. Remplissez: Titre du site, Nom d'utilisateur, Mot de passe, Email
-        4. Cliquez sur "Installer WordPress"
-        5. Terminé! Commencez à construire votre site
+        **⚠️ IMPORTANT : Configuration initiale requise**
         
-        **Premières choses à faire:**
+        Après l'installation, vous DEVEZ accéder à WordPress directement via cette URL pour terminer la configuration :
+        👉 **https://$domain**
+        
+        L'icône de l'application ne fonctionnera pas tant que vous n'aurez pas terminé l'assistant d'installation de WordPress.
+        Une fois la configuration terminée, vous pouvez utiliser l'icône de l'application normalement.
+        
+        ---
+        
+        **Configuration rapide (5 minutes) :**
+        1. Visitez https://$domain après l'installation
+        2. Choisissez votre langue
+        3. Remplissez : Titre du site, Nom d'utilisateur, Mot de passe, Email
+        4. Cliquez sur "Installer WordPress"
+        5. Terminé ! Vous pouvez maintenant utiliser l'icône de l'app pour accéder à votre site
+        
+        **Premières choses à faire :**
         • Choisir un thème (Apparence → Thèmes)
         • Créer votre première page ou article
         • Installer des plugins utiles comme Yoast SEO ou Contact Form 7
