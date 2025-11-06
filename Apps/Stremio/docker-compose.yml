@@ -24,11 +24,11 @@ services:
       NGINX_PORT: "8080"
     volumes:
       - type: bind
-        source: /DATA/AppData/stremio/web-cache
-        target: /app/cache
+        source: /DATA/AppData/stremio/web-cache/
+        target: /app/cache/
       - type: bind
-        source: /DATA/AppData/stremio/dynamic_paths
-        target: /tmp/dynamic_paths
+        source: /DATA/AppData/stremio/dynamic_paths/
+        target: /tmp/dynamic_paths/
     tmpfs:
       - /var/cache/nginx
       - /var/run
@@ -96,8 +96,8 @@ services:
       DYNAMIC_PATHS_TTL: "21600"
     volumes:
       - type: bind
-        source: /DATA/AppData/stremio/dynamic_paths
-        target: /tmp/dynamic_paths
+        source: /DATA/AppData/stremio/dynamic_paths/
+        target: /tmp/dynamic_paths/
     depends_on:
       - stremioweb
     networks:
@@ -137,9 +137,9 @@ services:
       INTERNAL_URL: "http://stremioserver:11470"
     volumes:
       - type: bind
-        #source: $DATA_ROOT/AppData/stremio/config #cross-compatible
-        source: /DATA/AppData/stremio/config
-        target: /root/.stremio-server
+        #source: $DATA_ROOT/AppData/stremio/config/#cross-compatible
+        source: /DATA/AppData/stremio/config/
+        target: /root/.stremio-server/
     networks:
       - pcs
     x-casaos:
