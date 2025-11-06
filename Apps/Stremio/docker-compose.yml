@@ -1,42 +1,34 @@
 name: stremio
 
 services:
-  stremioserver:
-    image: stremio/server:latest
-    container_name: stremioserver
-    restart: unless-stopped
-    expose:
-      - 11470
-    environment:
-      NO_CORS: "1"
-      APP_PATH: "/root/.stremio-server"
-    volumes:
-      - type: bind
-        source: $DATA_ROOT/AppData/stremio/config
-        target: /root/.stremio-server
-    networks:
-      - pcs
-    x-casaos:
-      volumes:
-        - container: /root/.stremio-server
-          description:
-            en_us: "Stremio server configuration and data"
-
   stremioweb:
-    image: nginx:alpine
+    image: krizcold/yundera-stremio-webui:latest
     container_name: stremioweb
     restart: unless-stopped
     user: "0:0"
+    environment:
+      # Preset configuration
+      PRESET_URLS: ""  # Comma-separated list of preset URLs (empty = no presets, supports single or multiple)
+      PRESET_TYPE: "full"
+      PRESET_LANGUAGE: "en"
+      ENABLE_PRESETS: "true"
+      # Update configuration
+      UPDATE_CHECK_HOURS: "24"
+      UPDATE_WINDOW_START: "03:00"  # Start of update window (24h format, empty to disable)
+      UPDATE_WINDOW_END: "05:00"    # End of update window (24h format, empty to disable)
+      UPDATE_ONLY_IN_WINDOW: "true" # Only apply updates during window (false to disable)
+      STREMIO_VERSION: "auto"       # "auto" for latest or specify version like "v5.0.0-beta.27"
+      # CDN configuration
+      STATICALLY_BASE: "https://cdn.statically.io/gh"
+      # Nginx port
+      NGINX_PORT: "8080"
     volumes:
       - type: bind
-        source: $DATA_ROOT/AppData/stremio/nginx.conf
-        target: /etc/nginx/nginx.conf
-        read_only: true
+        source: /DATA/AppData/stremio/web-cache
+        target: /app/cache
       - type: bind
-        source: $DATA_ROOT/AppData/stremio/web/build
-        target: /usr/share/nginx/html
-        read_only: true
-      - stremio_dynamic_paths:/tmp/dynamic_paths
+        source: /DATA/AppData/stremio/dynamic_paths
+        target: /tmp/dynamic_paths
     tmpfs:
       - /var/cache/nginx
       - /var/run
@@ -45,10 +37,46 @@ services:
       - stremioserver
     networks:
       - pcs
+    x-casaos:
+      envs:
+        - container: PRESET_URLS
+          description:
+            en_us: "Preset URLs (empty = no presets, single URL or comma-separated multiple URLs)"
+        - container: PRESET_TYPE
+          description:
+            en_us: "Addon preset level: minimal, standard, full, kids, factory"
+        - container: PRESET_LANGUAGE
+          description:
+            en_us: "Addon language: en, es, pt, fr, it, de"
+        - container: ENABLE_PRESETS
+          description:
+            en_us: "Enable preset system (true/false)"
+        - container: UPDATE_CHECK_HOURS
+          description:
+            en_us: "Hours between update checks (0 to disable)"
+        - container: UPDATE_WINDOW_START
+          description:
+            en_us: "Update window start time (24h format, e.g., '03:00', empty to disable)"
+        - container: UPDATE_WINDOW_END
+          description:
+            en_us: "Update window end time (24h format, e.g., '05:00', empty to disable)"
+        - container: UPDATE_ONLY_IN_WINDOW
+          description:
+            en_us: "Only apply updates during window (true/false)"
+        - container: STREMIO_VERSION
+          description:
+            en_us: "Stremio version: 'auto' or specific like 'v5.0.0-beta.27'"
+      volumes:
+        - container: /app/cache
+          description:
+            en_us: "Cache directory for presets and update flags"
+        - container: /tmp/dynamic_paths
+          description:
+            en_us: "Shared volume for dynamic path management with auth proxy"
 
-  authproxy:
+  stremio:
     image: krizcold/nginxhashlock:latest
-    container_name: stremioauth
+    #container_name: stremioauth
     restart: unless-stopped
     user: "root"
     privileged: true
@@ -56,18 +84,20 @@ services:
       - 3000
     environment:
       AUTH_HASH: $AUTH_HASH
-      USER: "admin"
-      PASSWORD: "stremio"
+      USER: "stremio"
+      PASSWORD: $default_pwd
       SESSION_DURATION_HOURS: "720"
       BACKEND_HOST: "stremioweb"
       BACKEND_PORT: "8080"
       LISTEN_PORT: "3000"
       ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,ico,svg,woff,woff2,ttf,eot,webp,map,json,wasm,html,m3u8,ts"
-      ALLOWED_PATHS: "settings,casting,network-info,device-info,hlsv2"
+      ALLOWED_PATHS: ""  # All API endpoints require authentication
       DYNAMIC_PATHS_FILE: "/tmp/dynamic_paths/allowed.txt"
-      DYNAMIC_PATHS_TTL: "300"
+      DYNAMIC_PATHS_TTL: "21600"
     volumes:
-      - stremio_dynamic_paths:/tmp/dynamic_paths
+      - type: bind
+        source: /DATA/AppData/stremio/dynamic_paths
+        target: /tmp/dynamic_paths
     depends_on:
       - stremioweb
     networks:
@@ -86,10 +116,37 @@ services:
         - container: ALLOWED_PATHS
           description:
             en_us: "API paths allowed without auth (required for Stremio functionality)"
+        - container: DYNAMIC_PATHS_TTL
+          description:
+            en_us: "Dynamic paths time-to-live in seconds (default: 21600 = 6 hours)"
+      volumes:
+        - container: /tmp/dynamic_paths
+          description:
+            en_us: "Shared volume for dynamic path management between auth proxy and web UI"
 
-volumes:
-  stremio_dynamic_paths:
-    driver: local
+  stremioserver:
+    image: stremio/server:latest
+    container_name: stremioserver
+    restart: unless-stopped
+    expose:
+      - 11470
+    environment:
+      NO_CORS: "1"
+      APP_PATH: "/root/.stremio-server"
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      INTERNAL_URL: "http://stremioserver:11470"
+    volumes:
+      - type: bind
+        #source: $DATA_ROOT/AppData/stremio/config #cross-compatible
+        source: /DATA/AppData/stremio/config
+        target: /root/.stremio-server
+    networks:
+      - pcs
+    x-casaos:
+      volumes:
+        - container: /root/.stremio-server
+          description:
+            en_us: "Stremio server configuration and data"
 
 networks:
   pcs:
@@ -99,126 +156,43 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: authproxy
-  author: Stremio
-  developer: Stremio
+  main: stremio
+  author: Yundera
+  developer: Yundera
   icon: https://www.stremio.com/website/stremio-logo-small.png
   tagline:
-    en_us: "Stream movies, series, live TV, and more (password protected)"
+    en_us: "Stream movies & series (with Smart Web UI)"
   category: Entertainment
   description:
-    en_us: "Stremio is a modern media center that gives you the freedom to watch everything you want. Multi-container setup with official Stremio server, web UI, and password protection. Default login: admin/stremio - Change password via environment variables in app settings."
+    en_us: |
+      Stremio with Yundera Smart Web UI Manager.
+
+      Features:
+      • Blue-Green deployment with zero downtime updates
+      • Smart Web UI container that auto-updates Stremio Web UI
+      • Configurable update window to minimize disruption (e.g., 3AM-5AM)
+      • Customizable preset system with multiple sources via environment variables
+      • Built-in NGINX Hash Lock authentication (optional)
+      • Automatic version management with configurable update checks
+      • All content fetched via Statically CDN (no direct GitHub access)
+      • Preset caching for improved performance
+      • Support for multiple preset sources simultaneously
+      • Clean architecture with no pre-install scripts needed
+
+      Configuration:
+      • PRESET_URLS: Add comma-separated URLs for custom addon presets
+      • PRESET_TYPE: Choose preset level (minimal/standard/full/kids/factory)
+      • PRESET_LANGUAGE: Select language for addons (en/es/pt/fr/it/de)
+      • UPDATE_CHECK_HOURS: Set update check interval (0 to disable)
+      • UPDATE_WINDOW: Configure when updates can be applied (optional)
+      • STREMIO_VERSION: Use 'auto' for latest or pin specific version
+
+      Default credentials: admin/stremio (change via environment variables)
+      Session duration: 30 days (configurable)
+      Dynamic paths TTL: 6 hours for streaming compatibility
   title:
-    en_us: "Stremio"
+    en_us: "Stremio Yundera"
   store_app_id: stremio
   is_uncontrolled: false
   index: /?hash=$AUTH_HASH
   webui_port: 3000
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/stremio/{config,web} 2>/dev/null || true
-    chmod -R 755 /DATA/AppData/stremio/ 2>/dev/null || true
-
-    # Download Stremio Web UI (official release v5.0.0-beta.27)
-    if [ ! -f "/DATA/AppData/stremio/web/build/index.html" ]; then
-      wget -q -O /tmp/stremio-web.zip https://github.com/Stremio/stremio-web/releases/download/v5.0.0-beta.27/stremio-web.zip || exit 1
-      unzip -q /tmp/stremio-web.zip -d /DATA/AppData/stremio/web/ || exit 1
-      rm /tmp/stremio-web.zip
-    fi
-
-    # Configure localStorage.json for automatic server URL detection
-    if [ -f "/DATA/AppData/stremio/web/build/index.html" ]; then
-      wget -q -O /DATA/AppData/stremio/localStorage.json https://raw.githubusercontent.com/tsaridas/stremio-docker/main/localStorage.json || exit 1
-      sed -i 's|http://127\.0\.0\.1:11470/|DYNAMIC_SERVER_URL_PLACEHOLDER|g' /DATA/AppData/stremio/localStorage.json
-      cp /DATA/AppData/stremio/localStorage.json /DATA/AppData/stremio/web/build/localStorage.json
-
-      # Inject auto-configuration script (runs once on first load)
-      cat > /tmp/stremio-basic-script.js <<'JSEOF'
-    if(!localStorage.getItem("stremio_configured")){
-      fetch("/localStorage.json").then(r=>r.text()).then(data=>{
-        localStorage.clear();
-        const parsed=JSON.parse(data.replaceAll("DYNAMIC_SERVER_URL_PLACEHOLDER",window.location.origin+"/"));
-        Object.keys(parsed).forEach(key=>localStorage.setItem(key,JSON.stringify(parsed[key])));
-        localStorage.setItem("stremio_configured","true");
-        console.log("Stremio configured for:",window.location.origin);
-        window.location.reload();
-      });
-    }
-    JSEOF
-
-      # Inject using Python (handles minified HTML perfectly)
-      python3 <<'PYEOF'
-    with open('/DATA/AppData/stremio/web/build/index.html', 'r') as f:
-        html = f.read()
-    with open('/tmp/stremio-basic-script.js', 'r') as f:
-        script = f.read()
-    # Replace first occurrence of </head> with script + </head>
-    html = html.replace('</head>', '<script>\n' + script + '\n</script>\n</head>', 1)
-    with open('/DATA/AppData/stremio/web/build/index.html', 'w') as f:
-        f.write(html)
-    print('[Pre-install] Script injected successfully')
-    PYEOF
-
-      rm /tmp/stremio-basic-script.js
-    fi
-
-    # Create nginx reverse proxy configuration
-    if [ ! -f "/DATA/AppData/stremio/nginx.conf" ]; then
-      cat > /DATA/AppData/stremio/nginx.conf <<'EOF'
-    worker_processes auto;
-    error_log /dev/stderr warn;
-    pid /var/run/nginx.pid;
-
-    events {
-        worker_connections 1024;
-    }
-
-    http {
-        include /etc/nginx/mime.types;
-        default_type application/octet-stream;
-
-        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
-                        '$status $body_bytes_sent "$http_referer" '
-                        '"$http_user_agent" "$http_x_forwarded_for"';
-
-        access_log /dev/stdout main;
-
-        sendfile on;
-        keepalive_timeout 65;
-
-        server {
-            listen 8080;
-            server_name _;
-
-            # Serve static files from stremio-web
-            location ~ \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|map|json|wasm|html)$ {
-                root /usr/share/nginx/html;
-                try_files $uri =404;
-            }
-
-            # Serve index.html for root
-            location = / {
-                root /usr/share/nginx/html;
-                try_files /index.html =404;
-            }
-
-            # Serve other HTML files and directories, or proxy to backend
-            location / {
-                root /usr/share/nginx/html;
-                try_files $uri @backend;
-            }
-
-            # Proxy everything else to stremio-server
-            location @backend {
-                proxy_pass http://stremioserver:11470;
-                proxy_http_version 1.1;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection 'upgrade';
-                proxy_set_header Host $host;
-                proxy_cache_bypass $http_upgrade;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            }
-        }
-    }
-    EOF
-    fi
