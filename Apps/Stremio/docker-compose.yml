@@ -1,128 +1,63 @@
 name: stremio
 
 services:
+  stremio:
+    image: krizcold/nginxhashlock:latest
+    container_name: stremio
+    restart: unless-stopped
+    user: "root"
+    privileged: true
+    expose:
+      - 80
+    environment:
+      SUBDOMAIN_HASH_ENABLED: "true"
+      SUBDOMAIN_HASH_LENGTH: "24"
+      SUBDOMAIN_PATTERN: "^([^-]+)-stremio-"
+      BACKEND_HASH: "serverhash"
+      AUTH_HASH: $AUTH_HASH
+      USER: "admin"
+      PASSWORD: "stremio"
+      BACKEND_HOST: "stremioserver"
+      BACKEND_PORT: "11470"
+      SECONDARY_BACKEND_HOST: "stremioweb"
+      SECONDARY_BACKEND_PORT: "8080"
+      LISTEN_PORT: "80"
+    depends_on:
+      - stremioweb
+      - stremioserver
+    networks:
+      - pcs
+
   stremioweb:
     image: krizcold/yundera-stremio-webui:latest
     container_name: stremioweb
     restart: unless-stopped
     user: "0:0"
     environment:
-      # Preset configuration
-      PRESET_URLS: ""  # Comma-separated list of preset URLs (empty = no presets, supports single or multiple)
+      BACKEND_HASH: "serverhash"
+      PRESET_URLS: ""
       PRESET_TYPE: "full"
       PRESET_LANGUAGE: "en"
       ENABLE_PRESETS: "true"
-      # Update configuration
       UPDATE_CHECK_HOURS: "24"
-      UPDATE_WINDOW_START: "03:00"  # Start of update window (24h format, empty to disable)
-      UPDATE_WINDOW_END: "05:00"    # End of update window (24h format, empty to disable)
-      UPDATE_ONLY_IN_WINDOW: "true" # Only apply updates during window (false to disable)
-      STREMIO_VERSION: "auto"       # "auto" for latest or specify version like "v5.0.0-beta.27"
-      # CDN configuration
+      UPDATE_WINDOW_START: "03:00"
+      UPDATE_WINDOW_END: "05:00"
+      UPDATE_ONLY_IN_WINDOW: "true"
+      STREMIO_VERSION: "auto"
       STATICALLY_BASE: "https://cdn.statically.io/gh"
-      # Nginx port
       NGINX_PORT: "8080"
     volumes:
       - type: bind
         source: /DATA/AppData/stremio/web-cache/
         target: /app/cache/
-      - type: bind
-        source: /DATA/AppData/stremio/dynamic_paths/
-        target: /tmp/dynamic_paths/
     tmpfs:
-      - /var/cache/nginx
-      - /var/run
+      - /var/cache/nginx/
+      - /var/run/
     privileged: true
     depends_on:
       - stremioserver
     networks:
       - pcs
-    x-casaos:
-      envs:
-        - container: PRESET_URLS
-          description:
-            en_us: "Preset URLs (empty = no presets, single URL or comma-separated multiple URLs)"
-        - container: PRESET_TYPE
-          description:
-            en_us: "Addon preset level: minimal, standard, full, kids, factory"
-        - container: PRESET_LANGUAGE
-          description:
-            en_us: "Addon language: en, es, pt, fr, it, de"
-        - container: ENABLE_PRESETS
-          description:
-            en_us: "Enable preset system (true/false)"
-        - container: UPDATE_CHECK_HOURS
-          description:
-            en_us: "Hours between update checks (0 to disable)"
-        - container: UPDATE_WINDOW_START
-          description:
-            en_us: "Update window start time (24h format, e.g., '03:00', empty to disable)"
-        - container: UPDATE_WINDOW_END
-          description:
-            en_us: "Update window end time (24h format, e.g., '05:00', empty to disable)"
-        - container: UPDATE_ONLY_IN_WINDOW
-          description:
-            en_us: "Only apply updates during window (true/false)"
-        - container: STREMIO_VERSION
-          description:
-            en_us: "Stremio version: 'auto' or specific like 'v5.0.0-beta.27'"
-      volumes:
-        - container: /app/cache
-          description:
-            en_us: "Cache directory for presets and update flags"
-        - container: /tmp/dynamic_paths
-          description:
-            en_us: "Shared volume for dynamic path management with auth proxy"
-
-  stremio:
-    image: krizcold/nginxhashlock:latest
-    #container_name: stremioauth
-    restart: unless-stopped
-    user: "root"
-    privileged: true
-    expose:
-      - 3000
-    environment:
-      AUTH_HASH: $AUTH_HASH
-      USER: "stremio"
-      PASSWORD: $default_pwd
-      SESSION_DURATION_HOURS: "720"
-      BACKEND_HOST: "stremioweb"
-      BACKEND_PORT: "8080"
-      LISTEN_PORT: "3000"
-      ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,ico,svg,woff,woff2,ttf,eot,webp,map,json,wasm,html,m3u8,ts"
-      ALLOWED_PATHS: ""  # All API endpoints require authentication
-      DYNAMIC_PATHS_FILE: "/tmp/dynamic_paths/allowed.txt"
-      DYNAMIC_PATHS_TTL: "21600"
-    volumes:
-      - type: bind
-        source: /DATA/AppData/stremio/dynamic_paths/
-        target: /tmp/dynamic_paths/
-    depends_on:
-      - stremioweb
-    networks:
-      - pcs
-    x-casaos:
-      envs:
-        - container: USER
-          description:
-            en_us: "Authentication username (change this!)"
-        - container: PASSWORD
-          description:
-            en_us: "Authentication password (change this!)"
-        - container: SESSION_DURATION_HOURS
-          description:
-            en_us: "Session duration in hours (default: 720 = 30 days)"
-        - container: ALLOWED_PATHS
-          description:
-            en_us: "API paths allowed without auth (required for Stremio functionality)"
-        - container: DYNAMIC_PATHS_TTL
-          description:
-            en_us: "Dynamic paths time-to-live in seconds (default: 21600 = 6 hours)"
-      volumes:
-        - container: /tmp/dynamic_paths
-          description:
-            en_us: "Shared volume for dynamic path management between auth proxy and web UI"
 
   stremioserver:
     image: stremio/server:latest
@@ -137,16 +72,10 @@ services:
       INTERNAL_URL: "http://stremioserver:11470"
     volumes:
       - type: bind
-        #source: $DATA_ROOT/AppData/stremio/config/#cross-compatible
         source: /DATA/AppData/stremio/config/
         target: /root/.stremio-server/
     networks:
       - pcs
-    x-casaos:
-      volumes:
-        - container: /root/.stremio-server
-          description:
-            en_us: "Stremio server configuration and data"
 
 networks:
   pcs:
@@ -161,38 +90,30 @@ x-casaos:
   developer: Yundera
   icon: https://www.stremio.com/website/stremio-logo-small.png
   tagline:
-    en_us: "Stream movies & series (with Smart Web UI)"
+    en_us: "Stream movies & series (Yundera Smart Edition)"
   category: Entertainment
   description:
-    en_us: |
-      Stremio with Yundera Smart Web UI Manager.
-
-      Features:
-      • Blue-Green deployment with zero downtime updates
-      • Smart Web UI container that auto-updates Stremio Web UI
-      • Configurable update window to minimize disruption (e.g., 3AM-5AM)
-      • Customizable preset system with multiple sources via environment variables
-      • Built-in NGINX Hash Lock authentication (optional)
-      • Automatic version management with configurable update checks
-      • All content fetched via Statically CDN (no direct GitHub access)
-      • Preset caching for improved performance
-      • Support for multiple preset sources simultaneously
-      • Clean architecture with no pre-install scripts needed
-
-      Configuration:
-      • PRESET_URLS: Add comma-separated URLs for custom addon presets
-      • PRESET_TYPE: Choose preset level (minimal/standard/full/kids/factory)
-      • PRESET_LANGUAGE: Select language for addons (en/es/pt/fr/it/de)
-      • UPDATE_CHECK_HOURS: Set update check interval (0 to disable)
-      • UPDATE_WINDOW: Configure when updates can be applied (optional)
-      • STREMIO_VERSION: Use 'auto' for latest or pin specific version
-
-      Default credentials: admin/stremio (change via environment variables)
-      Session duration: 30 days (configurable)
-      Dynamic paths TTL: 6 hours for streaming compatibility
+    en_us: "Stremio with Yundera Smart Web UI and subdomain-based server authentication. Features auto-updates, preset addons, and dual authentication for frontend and backend access."
   title:
     en_us: "Stremio Yundera"
-  store_app_id: stremio
+  store_app_id: stremioyundera
   is_uncontrolled: false
   index: /?hash=$AUTH_HASH
-  webui_port: 3000
+  webui_port: 80
+  tips:
+    before_install:
+      en_us: |
+        Access: `http://stremio-${REF_DOMAIN}/`
+
+        You can change USER/PASSWORD via environment variables on "stremio" service, by default:
+        • USER: admin
+        • PASSWORD: stremio
+
+        You can change BACKEND_HASH via environment variables on both "stremio" and "stremioweb" services.
+        - Note: BACKEND_HASH can only be up to 24 characters long.
+
+        You can set PRESET_URLS for a preset.json file to auto-load addons on first launch for non-logged users.
+        • Logged-in users can find addon URLs in the browser console to add them manually.
+        • Supports multiple preset sources (comma-separated URLs).
+
+        Features: Auto-updates, zero downtime, subdomain auth, dynamic streaming paths
