@@ -21,6 +21,7 @@ services:
       BACKEND_PORT: "11470"
       SECONDARY_BACKEND_HOST: "stremioweb"
       SECONDARY_BACKEND_PORT: "8080"
+      ALLOWED_PATHS: "casting,hlsv2"
       LISTEN_PORT: "80"
     tmpfs:
       - /var/cache/nginx:size=50M
@@ -57,9 +58,6 @@ services:
       - type: bind
         source: /DATA/AppData/stremio/web-cache/
         target: /app/cache/
-      - type: bind
-        source: /DATA/AppData/stremio/config/
-        target: /stremio-config/
     tmpfs:
       - /var/cache/nginx/
       - /var/run/
@@ -135,8 +133,8 @@ x-casaos:
 
       Features: Auto-updates, zero downtime, subdomain auth, dynamic streaming paths
   title:
-    en_us: "Stremio Yundera"
-  store_app_id: stremioyundera
+    en_us: "Stremio"
+  store_app_id: stremio
   is_uncontrolled: false
   index: /?hash=$AUTH_HASH
   webui_port: 80
