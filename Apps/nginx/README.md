@@ -1,10 +1,10 @@
-# Nginx Static - Static Website Hosting
+# nginx - Static Website Hosting
 
 A lightweight, high-performance static website hosting solution powered by nginx.
 
 ## Overview
 
-Nginx Static provides a simple way to host static websites, HTML pages, JavaScript applications, and documentation sites on CasaOS. Built on the industry-standard nginx web server, it delivers content blazingly fast with minimal resource usage.
+nginx provides a simple way to host static websites, HTML pages, JavaScript applications, and documentation sites on CasaOS. Built on the industry-standard nginx web server, it delivers content blazingly fast with minimal resource usage.
 
 ## Features
 

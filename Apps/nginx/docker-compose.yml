@@ -2,7 +2,7 @@ name: nginx
 
 services:
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:1.29.3-alpine
     container_name: nginx
     user: "0:0"
     restart: unless-stopped
@@ -11,11 +11,11 @@ services:
       - 80
     volumes:
       - type: bind
-        source: /DATA/AppData/$AppID/www
+        source: /DATA/AppData/nginx/www
         target: /usr/share/nginx/html
         read_only: false
       - type: bind
-        source: /DATA/AppData/$AppID/nginx.conf
+        source: /DATA/AppData/nginx/nginx.conf
         target: /etc/nginx/conf.d/default.conf
         read_only: true
     environment:
@@ -42,9 +42,9 @@ x-casaos:
   category: WEB
   description:
     en_us: |
-      **🌐 What is Nginx Static?**
+      **🌐 What is nginx?**
 
-      **Nginx Static** is a lightweight, high-performance web server for hosting static websites, HTML pages, JavaScript applications, and documentation sites. Built on nginx, the world's most popular web server, it delivers your content blazingly fast with minimal resource usage.
+      **nginx** is a lightweight, high-performance web server for hosting static websites, HTML pages, JavaScript applications, and documentation sites. The world's most popular web server, it delivers your content blazingly fast with minimal resource usage.
 
       Perfect for:
       • Personal websites and portfolios
@@ -65,18 +65,18 @@ x-casaos:
 
       Simply upload your HTML, CSS, JavaScript, and assets to `/DATA/AppData/nginx/www/` and your site is instantly live. No databases, no complex configuration, just pure static file hosting done right.
 
-      **🚀 Why Choose Nginx Static?**
+      **🚀 Why Choose nginx?**
 
-      **Nginx Static** gives you complete control over your web hosting without the complexity of managed services or the overhead of full-featured CMSs. It's the fastest way to get static content online.
+      **nginx** gives you complete control over your web hosting without the complexity of managed services or the overhead of full-featured CMSs. It's the fastest way to get static content online.
 
-      Why choose Nginx Static?
+      Why choose nginx?
       • **Your content, your server** — no external hosting dependencies
       • **Industry standard** — nginx is trusted by millions of production websites
       • **Zero overhead** — no backend processing, no database queries
       • **Instant updates** — edit files and changes appear immediately
       • **Developer friendly** — works with any static site workflow
 
-      With Nginx Static on **Yundera**, you can:
+      With nginx on **Yundera**, you can:
       • Host unlimited static sites
       • Deploy modern JavaScript applications
       • Serve API documentation
@@ -89,9 +89,9 @@ x-casaos:
       • Anyone wanting simple, fast web hosting
       • Projects that don't need server-side processing
     zh_cn: |
-      **🌐 什么是 Nginx Static？**
+      **🌐 什么是 nginx？**
 
-      **Nginx Static** 是一个轻量级、高性能的 Web 服务器，用于托管静态网站、HTML 页面、JavaScript 应用程序和文档站点。基于 nginx（世界上最流行的 Web 服务器）构建，它以最小的资源使用快速传递您的内容。
+      **nginx** 是一个轻量级、高性能的 Web 服务器，用于托管静态网站、HTML 页面、JavaScript 应用程序和文档站点。作为世界上最流行的 Web 服务器，它以最小的资源使用快速传递您的内容。
 
       适用于：
       • 个人网站和作品集
@@ -170,7 +170,7 @@ x-casaos:
 
       **资源：** 约 64MB 内存，最小 CPU
   title:
-    en_us: Nginx Static
+    en_us: Nginx
   index: /
   pre_install:
     - |
@@ -185,7 +185,7 @@ x-casaos:
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to Nginx Static</title>
+          <title>Welcome to nginx</title>
           <style>
               * {
                   margin: 0;
@@ -262,7 +262,7 @@ x-casaos:
       <body>
           <div class="container">
               <div class="emoji">🚀</div>
-              <h1>Welcome to Nginx Static!</h1>
+              <h1>Welcome to nginx!</h1>
               <p>Your static website server is up and running successfully.</p>
 
               <p>To add your own website, upload your files to:</p>
