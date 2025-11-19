@@ -11,7 +11,7 @@ services:
       - 80
     volumes:
       - type: bind
-        source: /DATA/AppData/nginx/www
+        source: /DATA/AppData/nginx/www/
         target: /usr/share/nginx/html
         read_only: false
       - type: bind
@@ -175,11 +175,11 @@ x-casaos:
   pre_install:
     - |
       # Create necessary directories
-      mkdir -p /DATA/AppData/$AppID/www
+      mkdir -p /DATA/AppData/nginx/www
 
       # Create default index.html if it doesn't exist
-      if [ ! -f "/DATA/AppData/$AppID/www/index.html" ]; then
-        cat > /DATA/AppData/$AppID/www/index.html <<'EOF'
+      if [ ! -f "/DATA/AppData/nginx/www/index.html" ]; then
+        cat > /DATA/AppData/nginx/www/index.html <<'EOF'
       <!DOCTYPE html>
       <html lang="en">
       <head>
@@ -282,8 +282,8 @@ x-casaos:
       fi
 
       # Create optimized nginx configuration for static sites and SPAs
-      if [ ! -f "/DATA/AppData/$AppID/nginx.conf" ]; then
-        cat > /DATA/AppData/$AppID/nginx.conf <<'EOF'
+      if [ ! -f "/DATA/AppData/nginx/nginx.conf" ]; then
+        cat > /DATA/AppData/nginx/nginx.conf <<'EOF'
       server {
           listen 80;
           listen [::]:80;
@@ -336,4 +336,4 @@ x-casaos:
       fi
 
       # Set proper permissions (root runs the container, but files should be accessible)
-      chmod -R 755 /DATA/AppData/$AppID
+      chmod -R 755 /DATA/AppData/nginx
