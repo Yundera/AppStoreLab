@@ -2,7 +2,7 @@ name: odoo
 
 services:
   postgres:
-    image: postgres:15.8
+    image: postgres:15.15
     user: "0:0"
     environment:
       POSTGRES_DB: postgres
@@ -187,3 +187,4 @@ x-casaos:
         - La configuration initiale peut prendre quelques minutes
         - Après la création de la base de données, vous pouvez vous connecter avec votre compte administrateur
   index: /
+  scheme: https
