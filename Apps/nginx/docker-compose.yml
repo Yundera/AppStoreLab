@@ -1,0 +1,339 @@
+name: nginx
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx
+    user: "0:0"
+    restart: unless-stopped
+    network_mode: bridge
+    expose:
+      - 80
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/www
+        target: /usr/share/nginx/html
+        read_only: false
+      - type: bind
+        source: /DATA/AppData/$AppID/nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+    environment:
+      - PUID=0
+      - PGID=0
+      - TZ=$TZ
+      - NGINX_HOST=$domain
+      - NGINX_PORT=80
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+    cpu_shares: 50
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: nginx
+  webui_port: 80
+  author: Yundera Team
+  category: WEB
+  description:
+    en_us: |
+      **🌐 What is Nginx Static?**
+
+      **Nginx Static** is a lightweight, high-performance web server for hosting static websites, HTML pages, JavaScript applications, and documentation sites. Built on nginx, the world's most popular web server, it delivers your content blazingly fast with minimal resource usage.
+
+      Perfect for:
+      • Personal websites and portfolios
+      • Single-page applications (React, Vue, Angular)
+      • Documentation sites
+      • Landing pages and marketing sites
+      • Static site generators (Hugo, Jekyll, Gatsby)
+      • HTML/CSS/JavaScript projects
+
+      **Key Features:**
+
+      • **Zero Configuration** — Drop your files in and start serving immediately
+      • **Lightning Fast** — nginx delivers static content faster than any alternative
+      • **Minimal Resources** — Runs efficiently with just 64MB RAM
+      • **Clean URLs** — Automatic HTTPS access via NSL.SH routing
+      • **Modern Web Support** — Full support for SPAs, PWAs, and modern JavaScript
+      • **Production Ready** — Battle-tested nginx powers 30% of the internet
+
+      Simply upload your HTML, CSS, JavaScript, and assets to `/DATA/AppData/nginx/www/` and your site is instantly live. No databases, no complex configuration, just pure static file hosting done right.
+
+      **🚀 Why Choose Nginx Static?**
+
+      **Nginx Static** gives you complete control over your web hosting without the complexity of managed services or the overhead of full-featured CMSs. It's the fastest way to get static content online.
+
+      Why choose Nginx Static?
+      • **Your content, your server** — no external hosting dependencies
+      • **Industry standard** — nginx is trusted by millions of production websites
+      • **Zero overhead** — no backend processing, no database queries
+      • **Instant updates** — edit files and changes appear immediately
+      • **Developer friendly** — works with any static site workflow
+
+      With Nginx Static on **Yundera**, you can:
+      • Host unlimited static sites
+      • Deploy modern JavaScript applications
+      • Serve API documentation
+      • Create internal company websites
+      • Test frontend projects before production
+
+      **🛠️ Perfect For:**
+      • Frontend developers testing static builds
+      • Teams needing internal documentation sites
+      • Anyone wanting simple, fast web hosting
+      • Projects that don't need server-side processing
+    zh_cn: |
+      **🌐 什么是 Nginx Static？**
+
+      **Nginx Static** 是一个轻量级、高性能的 Web 服务器，用于托管静态网站、HTML 页面、JavaScript 应用程序和文档站点。基于 nginx（世界上最流行的 Web 服务器）构建，它以最小的资源使用快速传递您的内容。
+
+      适用于：
+      • 个人网站和作品集
+      • 单页应用程序（React、Vue、Angular）
+      • 文档站点
+      • 登陆页面和营销站点
+      • 静态站点生成器（Hugo、Jekyll、Gatsby）
+      • HTML/CSS/JavaScript 项目
+
+      **主要功能：**
+
+      • **零配置** — 放入文件即可立即开始服务
+      • **闪电般快速** — nginx 比任何替代方案都更快地传递静态内容
+      • **最小资源** — 仅需 64MB RAM 即可高效运行
+      • **清洁 URL** — 通过 NSL.SH 路由自动 HTTPS 访问
+      • **现代 Web 支持** — 完全支持 SPA、PWA 和现代 JavaScript
+      • **生产就绪** — 经过实战检验的 nginx 为 30% 的互联网提供动力
+
+      只需将您的 HTML、CSS、JavaScript 和资源上传到 `/DATA/AppData/nginx/www/`，您的网站就会立即上线。无需数据库，无需复杂配置，只需纯静态文件托管。
+  developer: nginx
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/screenshot-1.png
+  tagline:
+    en_us: Lightning-fast static website hosting powered by nginx
+    zh_cn: 由 nginx 提供支持的闪电般快速静态网站托管
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/thumbnail.png
+  tips:
+    before_install:
+      en_us: |
+        **📁 Setup Instructions**
+
+        After installation, add your website files to:
+        `/DATA/AppData/nginx/www/`
+
+        **Quick Start:**
+        1. Install the app
+        2. Upload your website files to the www directory
+        3. Access your site at: `https://nginx-$domain/`
+
+        **Default Setup:**
+        • A sample index.html is included to get you started
+        • Edit or replace it with your own content
+        • nginx.conf is pre-configured for optimal static hosting
+
+        **File Structure:**
+        ```
+        /DATA/AppData/nginx/
+        ├── www/              # Your website files go here
+        │   ├── index.html   # Main page
+        │   ├── css/         # Stylesheets
+        │   ├── js/          # JavaScript files
+        │   └── assets/      # Images, fonts, etc.
+        └── nginx.conf       # nginx configuration
+        ```
+
+        **Single Page Apps (SPA):**
+        For React, Vue, or Angular apps, the included nginx.conf automatically handles client-side routing by serving index.html for all routes.
+
+        **Resources:** ~64MB memory, minimal CPU
+    zh_cn: |
+      **📁 设置说明**
+
+      安装后，将您的网站文件添加到：
+      `/DATA/AppData/nginx/www/`
+
+      **快速开始：**
+      1. 安装应用
+      2. 将您的网站文件上传到 www 目录
+      3. 访问您的站点：`https://nginx-$domain/`
+
+      **默认设置：**
+      • 包含示例 index.html 供您入门
+      • 编辑或用您自己的内容替换
+      • nginx.conf 已预配置用于最佳静态托管
+
+      **资源：** 约 64MB 内存，最小 CPU
+  title:
+    en_us: Nginx Static
+  index: /
+  pre_install:
+    - |
+      # Create necessary directories
+      mkdir -p /DATA/AppData/$AppID/www
+
+      # Create default index.html if it doesn't exist
+      if [ ! -f "/DATA/AppData/$AppID/www/index.html" ]; then
+        cat > /DATA/AppData/$AppID/www/index.html <<'EOF'
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Welcome to Nginx Static</title>
+          <style>
+              * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+              }
+              body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  min-height: 100vh;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: #fff;
+                  padding: 20px;
+              }
+              .container {
+                  max-width: 800px;
+                  background: rgba(255, 255, 255, 0.1);
+                  backdrop-filter: blur(10px);
+                  border-radius: 20px;
+                  padding: 60px 40px;
+                  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+                  border: 1px solid rgba(255, 255, 255, 0.18);
+                  text-align: center;
+              }
+              h1 {
+                  font-size: 3em;
+                  margin-bottom: 20px;
+                  font-weight: 700;
+              }
+              p {
+                  font-size: 1.2em;
+                  line-height: 1.6;
+                  margin-bottom: 30px;
+                  opacity: 0.9;
+              }
+              .code-block {
+                  background: rgba(0, 0, 0, 0.3);
+                  padding: 20px;
+                  border-radius: 10px;
+                  font-family: 'Courier New', monospace;
+                  text-align: left;
+                  margin: 20px 0;
+                  overflow-x: auto;
+              }
+              .highlight {
+                  color: #ffd700;
+                  font-weight: 600;
+              }
+              .button {
+                  display: inline-block;
+                  margin-top: 20px;
+                  padding: 15px 30px;
+                  background: rgba(255, 255, 255, 0.2);
+                  border: 2px solid rgba(255, 255, 255, 0.4);
+                  border-radius: 50px;
+                  color: #fff;
+                  text-decoration: none;
+                  font-weight: 600;
+                  transition: all 0.3s ease;
+              }
+              .button:hover {
+                  background: rgba(255, 255, 255, 0.3);
+                  transform: translateY(-2px);
+                  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+              }
+              .emoji {
+                  font-size: 4em;
+                  margin-bottom: 20px;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <div class="emoji">🚀</div>
+              <h1>Welcome to Nginx Static!</h1>
+              <p>Your static website server is up and running successfully.</p>
+
+              <p>To add your own website, upload your files to:</p>
+              <div class="code-block">
+                  <span class="highlight">/DATA/AppData/nginx/www/</span>
+              </div>
+
+              <p>Replace this <code>index.html</code> file with your own content, or build your entire site structure here. nginx will serve everything lightning fast!</p>
+
+              <p><strong>Perfect for:</strong> HTML/CSS/JS sites, React, Vue, Angular apps, documentation, portfolios, and more.</p>
+
+              <a href="https://nginx.org/en/docs/" class="button" target="_blank">nginx Documentation</a>
+          </div>
+      </body>
+      </html>
+      EOF
+      fi
+
+      # Create optimized nginx configuration for static sites and SPAs
+      if [ ! -f "/DATA/AppData/$AppID/nginx.conf" ]; then
+        cat > /DATA/AppData/$AppID/nginx.conf <<'EOF'
+      server {
+          listen 80;
+          listen [::]:80;
+          server_name _;
+
+          root /usr/share/nginx/html;
+          index index.html index.htm;
+
+          # Enable gzip compression
+          gzip on;
+          gzip_vary on;
+          gzip_min_length 1024;
+          gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+
+          # Security headers
+          add_header X-Frame-Options "SAMEORIGIN" always;
+          add_header X-Content-Type-Options "nosniff" always;
+          add_header X-XSS-Protection "1; mode=block" always;
+
+          # Caching for static assets
+          location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+              expires 1y;
+              add_header Cache-Control "public, immutable";
+          }
+
+          # SPA support - serve index.html for all routes
+          location / {
+              try_files $uri $uri/ /index.html;
+          }
+
+          # Disable logging for favicon and robots.txt
+          location = /favicon.ico {
+              log_not_found off;
+              access_log off;
+          }
+
+          location = /robots.txt {
+              log_not_found off;
+              access_log off;
+          }
+
+          # Deny access to hidden files
+          location ~ /\. {
+              deny all;
+              access_log off;
+              log_not_found off;
+          }
+      }
+      EOF
+      fi
+
+      # Set proper permissions (root runs the container, but files should be accessible)
+      chmod -R 755 /DATA/AppData/$AppID
