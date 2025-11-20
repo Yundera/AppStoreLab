@@ -157,7 +157,7 @@ x-casaos:
         ports:
           - "80:80"
         ```
-        Then access your site at: `http://[$PUBLIC_IPV6]`
+        Then access your site at: `http://[$PCS_PUBLIC_IPV6]`
 
         **Resources:** ~64MB memory, minimal CPU
     zh_cn: |
