@@ -151,6 +151,14 @@ x-casaos:
         **Single Page Apps (SPA):**
         For React, Vue, or Angular apps, the included nginx.conf automatically handles client-side routing by serving index.html for all routes.
 
+        **IPv6 Access:**
+        To access nginx directly via IPv6, bind port 80 in the docker-compose.yml:
+        ```yaml
+        ports:
+          - "80:80"
+        ```
+        Then access your site at: `http://[$PUBLIC_IPV6]`
+
         **Resources:** ~64MB memory, minimal CPU
     zh_cn: |
       **📁 设置说明**
