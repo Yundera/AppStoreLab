@@ -226,7 +226,7 @@ x-casaos:
     fr_fr: Analyse web simple, open-source, légère et respectueuse de la vie privée
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plausible/thumbnail.png
   title:
-    en_us: Plausible Analytics
+    en_us: Plausible
   tips:
     before_install:
       en_us: |
