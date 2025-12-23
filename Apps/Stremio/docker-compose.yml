@@ -16,8 +16,6 @@ services:
       BACKEND_HOST: "stremiocommunity"
       BACKEND_PORT: "8080"
       LISTEN_PORT: "80"
-      ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,ico,svg,woff,woff2,ttf,eot,webp,map,json,wasm,html,m3u8,ts,mp4"
-      ALLOWED_PATHS: ""
     tmpfs:
       - /var/cache/nginx:size=50M
     depends_on:
@@ -46,8 +44,8 @@ services:
       AUTO_SERVER_URL: "1"
     volumes:
       - type: bind
-        source: /DATA/AppData/stremio/server
-        target: /root/.stremio-server
+        source: /DATA/AppData/stremio/server/
+        target: /root/.stremio-server/
     networks:
       - pcs
     x-casaos:
@@ -94,14 +92,14 @@ x-casaos:
     en_us: "Stremio"
   store_app_id: stremio
   is_uncontrolled: false
-  index: /
+  index: /?hash=$AUTH_HASH
   webui_port: 80
   tips:
     before_install:
       en_us: |
         Access: `https://${REF_DOMAIN}/` login: `admin` / `stremio`
 
-        You can change USER/PASSWORD via environment variables on "stremio" service, by default:
+        You can change USER/PASSWORD on the App's Settings, via environment variables on "stremio" service, by default:
         • USER: admin
         • PASSWORD: stremio
 
