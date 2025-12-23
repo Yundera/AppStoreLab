@@ -2,91 +2,59 @@ name: stremio
 
 services:
   stremio:
-    image: krizcold/nginxhashlock:latest
+    image: ghcr.io/yundera/nginx-hash-lock:latest
     container_name: stremio
     restart: unless-stopped
     user: "root"
-    privileged: true
     expose:
       - 80
     environment:
-      SUBDOMAIN_HASH_ENABLED: "true"
-      SUBDOMAIN_HASH_LENGTH: "24"
-      SUBDOMAIN_PATTERN: "^([^-]+)-stremio-"
-      BACKEND_HASH: "serverhash"
       AUTH_HASH: $AUTH_HASH
       USER: "admin"
       PASSWORD: "stremio"
-      BACKEND_HOST: "stremioserver"
-      BACKEND_PORT: "11470"
-      SECONDARY_BACKEND_HOST: "stremioweb"
-      SECONDARY_BACKEND_PORT: "8080"
-      ALLOWED_PATHS: "casting,hlsv2"
+      SESSION_DURATION_HOURS: "720"
+      BACKEND_HOST: "stremiocommunity"
+      BACKEND_PORT: "8080"
       LISTEN_PORT: "80"
+      ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,ico,svg,woff,woff2,ttf,eot,webp,map,json,wasm,html,m3u8,ts,mp4"
+      ALLOWED_PATHS: ""
     tmpfs:
       - /var/cache/nginx:size=50M
     depends_on:
-      - stremioweb
-      - stremioserver
+      - stremiocommunity
     networks:
       - pcs
+    x-casaos:
+      envs:
+        - container: USER
+          description:
+            en_us: "Login username"
+        - container: PASSWORD
+          description:
+            en_us: "Login password"
+        - container: SESSION_DURATION_HOURS
+          description:
+            en_us: "Session duration in hours (default: 720 = 30 days)"
 
-  stremioweb:
-    image: krizcold/yundera-stremio-webui:latest
-    container_name: stremioweb
+  stremiocommunity:
+    image: tsaridas/stremio-docker:latest
+    container_name: stremiocommunity
     restart: unless-stopped
     user: "0:0"
-    environment:
-      BACKEND_HASH: "serverhash"
-      # Backend auth ENVs (passed for cache bust tracking only)
-      BACKEND_AUTH_HASH: $AUTH_HASH
-      BACKEND_USER: "admin"
-      BACKEND_PASSWORD: "stremio"
-      # UI settings
-      PRESET_URLS: ""
-      PRESET_TYPE: "full"
-      PRESET_LANGUAGE: "en"
-      ENABLE_PRESETS: "true"
-      UPDATE_CHECK_HOURS: "24"
-      UPDATE_WINDOW_START: "03:00"
-      UPDATE_WINDOW_END: "05:00"
-      UPDATE_ONLY_IN_WINDOW: "true"
-      STREMIO_VERSION: "auto"
-      STATICALLY_BASE: "https://cdn.statically.io/gh"
-      NGINX_PORT: "8080"
-    volumes:
-      - type: bind
-        source: /DATA/AppData/stremio/web-cache/
-        target: /app/cache/
-    tmpfs:
-      - /var/cache/nginx/
-      - /var/run/
-    privileged: true
-    networks:
-      - pcs
-
-  stremioserver:
-    image: stremio/server:latest
-    container_name: stremioserver
-    restart: unless-stopped
-    user: "0:0"
-    expose:
-      - 11470
     environment:
       NO_CORS: "1"
-      APP_PATH: "/root/.stremio-server"
-      NODE_TLS_REJECT_UNAUTHORIZED: "0"
-      INTERNAL_URL: "http://stremioserver:11470"
-      # Disable hardware acceleration since server has no GPU
-      FFMPEG_HARDWARE_ACCEL: "disable"
-      NO_HWACCEL: "1"
-      DISABLE_HWACCEL: "true"
+      AUTO_SERVER_URL: "1"
     volumes:
       - type: bind
-        source: /DATA/AppData/stremio/config/
-        target: /root/.stremio-server/
+        source: /DATA/AppData/stremio/server
+        target: /root/.stremio-server
     networks:
       - pcs
+    x-casaos:
+      volumes:
+        - container: /root/.stremio-server
+          description:
+            en_us: "Stremio server data and configuration"
 
 networks:
   pcs:
@@ -96,47 +64,37 @@ x-casaos:
   architectures:
     - amd64
     - arm64
+    - arm/v7
   main: stremio
   author: Yundera
   developer: Yundera
   icon: https://www.stremio.com/website/stremio-logo-small.png
   tagline:
-    en_us: "Stream movies & series (Yundera Smart Edition)"
+    en_us: "Stream movies & series (Community Edition)"
   category: Entertainment
   description:
     en_us: |
-      Stremio with Yundera Smart Web UI, local media support, and subdomain-based server authentication. Features auto-updates, preset addons, dual authentication, and access to your local media library
+      Stremio Community Edition with NGINX Hash Lock authentication.
 
-      Access: `https://${REF_DOMAIN}/` login: `admin` / `stremio`
+      Features:
+      - Clean login page (username/password)
+      - Direct link access with ?hash= parameter
+      - 30-day session duration
+      - Clean subdomain (no port prefix)
+      - All-in-one streaming server with FFmpeg transcoding
 
-      You can change USER/PASSWORD via environment variables on "stremio" service, by default:
-      • USER: admin
-      • PASSWORD: stremio
+      Default credentials: admin / stremio
+      Change via environment variables on the "stremio" service.
 
-      You can change the backend access credentials by changing BACKEND_HASH via environment variables on both "stremio" AND "stremioweb" services.
-      • Note: BACKEND_HASH can only be up to 24 characters long.
-      • Make sure to set the same BACKEND_HASH on BOTH stremio AND stremioweb services!
-
-      You can set PRESET_URLS for a preset.json file to auto-load addons on first launch for non-logged users.
-      • Logged-in users can find addon URLs in the browser console to add them manually.
-      • Supports multiple preset sources (comma-separated URLs).
-
-      LOCAL MEDIA ACCESS:
-      • This container mounts local media folders for streaming
-      • Movies: /DATA/Media/Movies
-      • TV Shows: /DATA/Media/TV Shows
-      • Downloads: /DATA/Downloads
-      • To enable: Settings → Streaming → Enable "Local Files" → Restart Stremio
-      • Supported formats: mp4, mkv, avi, mov, wmv, flv, webm, m4v
-      • Files not discovered? Drag & drop them into Stremio
-      • You can find some "Stremio preset.json" examples online or create your own.
-
-      Features: Auto-updates, zero downtime, subdomain auth, dynamic streaming paths
+      This setup uses the tsaridas/stremio-docker community image
+      which bundles Stremio Server, Web UI, and FFmpeg in a single
+      optimized container. NGINX Hash Lock provides authentication
+      while allowing internal streaming to work without interference.
   title:
     en_us: "Stremio"
   store_app_id: stremio
   is_uncontrolled: false
-  index: /?hash=$AUTH_HASH
+  index: /
   webui_port: 80
   tips:
     before_install:
@@ -147,22 +105,7 @@ x-casaos:
         • USER: admin
         • PASSWORD: stremio
 
-        You can change the backend access credentials by changing BACKEND_HASH via environment variables on both "stremio" AND "stremioweb" services.
-        • Note: BACKEND_HASH can only be up to 24 characters long.
-        • Make sure to set the same BACKEND_HASH on BOTH stremio AND stremioweb services!
+        You can find Stremio addons in the Stremio Addon Catalog: https://addons.strem.io/
+        Or search for "Stremio addons" online for more options.
 
-        You can set PRESET_URLS for a preset.json file to auto-load addons on first launch for non-logged users.
-        • Logged-in users can find addon URLs in the browser console to add them manually.
-        • Supports multiple preset sources (comma-separated URLs).
-
-        LOCAL MEDIA ACCESS:
-        • This container mounts local media folders for streaming
-        • Movies: /DATA/Media/Movies
-        • TV Shows: /DATA/Media/TV Shows
-        • Downloads: /DATA/Downloads
-        • To enable: Settings → Streaming → Enable "Local Files" → Restart Stremio
-        • Supported formats: mp4, mkv, avi, mov, wmv, flv, webm, m4v
-        • Files not discovered? Drag & drop them into Stremio
-        • You can find some "Stremio preset.json" examples online or create your own.
-
-        Features: Auto-updates, zero downtime, subdomain auth, dynamic streaming paths
+        Stremio Addons provide access to various streaming sources, including movies, series, TV channels, and more.
