@@ -10,6 +10,7 @@ services:
       - 80
     environment:
       - PORT=80
+      - SCHEME=https
     restart: unless-stopped
     cpu_shares: 70
     user: 0:0
