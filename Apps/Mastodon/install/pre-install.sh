@@ -81,14 +81,23 @@ fi
 echo ""
 echo "=== Initializing Database ==="
 
-# Start database and redis containers only
+# Start database and redis containers only  
 cd /DATA/AppData/casaos/apps/mastodon
+export $(cat /DATA/AppData/casaos/apps/mastodon/.env | xargs)
 docker compose up -d db redis
 
 # Wait for database to be ready
 echo "Waiting for database to be ready..."
+RETRY_COUNT=0
+MAX_RETRIES=30
 until docker compose exec -T db pg_isready -U mastodon > /dev/null 2>&1; do
-    echo "Database not ready, waiting..."
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+        echo "Error: Database failed to start after $MAX_RETRIES attempts"
+        docker compose logs db
+        exit 1
+    fi
+    echo "Database not ready, waiting... (attempt $RETRY_COUNT/$MAX_RETRIES)"
     sleep 2
 done
 echo "Database is ready!"
@@ -99,7 +108,11 @@ DB_INITIALIZED=$(docker compose exec -T db psql -U mastodon -d mastodon_producti
 
 if [ "$DB_INITIALIZED" -eq "0" ]; then
     echo "Database not initialized. Running schema load..."
-    docker compose run --rm mastodon-backend bundle exec rails db:schema:load
+    if ! docker compose run --rm --env-file /DATA/AppData/casaos/apps/mastodon/.env mastodon-backend bundle exec rails db:schema:load; then
+        echo "Error: Failed to load database schema"
+        docker compose logs mastodon-backend
+        exit 1
+    fi
     echo "Database schema loaded!"
 else
     echo "Database already initialized (found $DB_INITIALIZED tables), skipping schema load."
@@ -107,28 +120,58 @@ fi
 
 # Run migrations (idempotent - only runs pending migrations)
 echo "Running database migrations..."
-docker compose run --rm mastodon-backend bundle exec rails db:migrate
+if ! docker compose run --rm --env-file /DATA/AppData/casaos/apps/mastodon/.env mastodon-backend bundle exec rails db:migrate; then
+    echo "Error: Failed to run database migrations"
+    docker compose logs mastodon-backend
+    exit 1
+fi
 echo "Migrations complete!"
 
 # Check if admin user exists and create if needed
 echo "Checking for admin user..."
-ADMIN_OUTPUT=$(docker compose run --rm mastodon-backend bin/tootctl accounts create admin --email $PCS_EMAIL --confirmed 2>&1 || true)
+ADMIN_OUTPUT=$(docker compose run --rm --env-file /DATA/AppData/casaos/apps/mastodon/.env mastodon-backend bin/tootctl accounts create admin --email $PCS_EMAIL --confirmed 2>&1 || true)
 
-if echo "$ADMIN_OUTPUT" | grep -q "New password:"; then
-    echo "Creating admin user..."
-    docker compose run --rm mastodon-backend bin/tootctl accounts modify admin --approve
+if echo "$ADMIN_OUTPUT" | grep -q "New password:" || echo "$ADMIN_OUTPUT" | grep -q "OK"; then
+    echo "Admin user created or already exists. Setting up permissions and password..."
+    
+    # Approve the admin user (idempotent)
+    docker compose run --rm --env-file /DATA/AppData/casaos/apps/mastodon/.env mastodon-backend bin/tootctl accounts modify admin --approve || true
 
     # Set password to PCS_DEFAULT_PASSWORD
     echo "Setting admin password..."
-    docker compose run --rm mastodon-backend bin/rails runner "u = User.find_by(email: '$PCS_EMAIL'); u.password = '$PCS_DEFAULT_PASSWORD'; u.password_confirmation = '$PCS_DEFAULT_PASSWORD'; u.save"
+    if ! docker compose run --rm --env-file /DATA/AppData/casaos/apps/mastodon/.env mastodon-backend bin/rails runner "u = User.find_by(email: '$PCS_EMAIL'); if u.nil?; puts 'User not found'; exit 1; end; u.password = '$PCS_DEFAULT_PASSWORD'; u.password_confirmation = '$PCS_DEFAULT_PASSWORD'; puts 'Password updated successfully' if u.save"; then
+        echo "Error: Failed to set admin password"
+        exit 1
+    fi
 
     echo ""
-    echo "=== Admin User Created! ==="
+    echo "=== Admin User Ready! ==="
     echo "Email: $PCS_EMAIL"
     echo "Password: $PCS_DEFAULT_PASSWORD"
     echo ""
 else
-    echo "Admin user already exists, skipping creation."
+    echo "Failed to create admin user. Output:"
+    echo "$ADMIN_OUTPUT"
+    exit 1
+fi
+
+# Validate database setup
+echo ""
+echo "=== Validating Database Setup ==="
+FINAL_TABLE_COUNT=$(docker compose exec -T db psql -U mastodon -d mastodon_production -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "0")
+ADMIN_USER_COUNT=$(docker compose run --rm --env-file /DATA/AppData/casaos/apps/mastodon/.env mastodon-backend bin/rails runner "puts User.where(email: '$PCS_EMAIL').count" 2>/dev/null || echo "0")
+
+echo "Database tables found: $FINAL_TABLE_COUNT"
+echo "Admin users found: $ADMIN_USER_COUNT"
+
+if [ "$FINAL_TABLE_COUNT" -lt "10" ]; then
+    echo "Error: Database appears to be incompletely initialized (only $FINAL_TABLE_COUNT tables)"
+    exit 1
+fi
+
+if [ "$ADMIN_USER_COUNT" -eq "0" ]; then
+    echo "Error: Admin user was not created properly"
+    exit 1
 fi
 
 # Stop temporary containers
@@ -136,5 +179,7 @@ docker compose down
 
 echo ""
 echo "=== Pre-Install Complete! ==="
-echo "Database initialized and ready for application startup"
+echo "✅ Database initialized with $FINAL_TABLE_COUNT tables"
+echo "✅ Admin user created: $PCS_EMAIL"
+echo "✅ Ready for application startup"
 echo ""
