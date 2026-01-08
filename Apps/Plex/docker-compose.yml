@@ -1,17 +1,41 @@
 name: plex
 
 services:
+  nginxhashlock:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: plex-nginxhashlock
+    restart: unless-stopped
+    user: "root"
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: "plex"
+      BACKEND_PORT: "32400"
+      LISTEN_PORT: "80"
+      ALLOWED_EXTENSIONS: "js,css,png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,eot"
+      ALLOWED_PATHS: "web/index.html"
+    expose:
+      - 80
+    depends_on:
+      - plex
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+  
   plex:
-    image: lscr.io/linuxserver/plex:1.41.8.9834-071366D65-ls269
+    image: lscr.io/linuxserver/plex:1.42.2
     container_name: plex
     restart: unless-stopped
-    expose:
-      - 32400
-    ports:
-      - "32400:32400/tcp"
     volumes:
-      - /DATA/AppData/$AppID:/config
-      - /DATA/AppData/$AppID/transcode:/transcode
+      - /DATA/AppData/plex:/config
+      - /DATA/AppData/plex/transcode:/transcode
       - /DATA/Media/Movies:/data/movies
       - /DATA/Media/TV Shows:/data/tvshows
       - /DATA/Media/Music:/data/music
@@ -28,6 +52,16 @@ services:
       resources:
         limits:
           memory: 1G
+    privileged: true
+    networks:
+      - pcs
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
+networks:
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
@@ -67,7 +101,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plex/thumbnail.png
-  index: /web
+  index: /?hash=$AUTH_HASH
   tagline:
     en_us: Your personal streaming service for all your media
     zh_cn: 您的个人媒体流媒体服务
@@ -77,9 +111,9 @@ x-casaos:
     zh_cn: Plex
     ko_kr: Plex
   store_app_id: plex
-  main: plex
+  main: nginxhashlock
   is_uncontrolled: false
-  webui_port: 32400
+  webui_port: 80
   tips:
     before_install:
       en_us: |
