@@ -1,5 +1,32 @@
 name: spliit
 services:
+  nginxhashlock:
+    image: ghcr.io/yundera/nginx-hash-lock:latest
+    container_name: spliit-nginxhashlock
+    restart: unless-stopped
+    user: "root"
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: "spliit"
+      BACKEND_PORT: "3000"
+      LISTEN_PORT: "80"
+    expose:
+      - 80
+    depends_on:
+      - spliit
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    cpu_shares: 80
+    networks:
+      - pcs
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+
   db:
     image: postgres:16-alpine
     container_name: spliit-db
@@ -14,7 +41,7 @@ services:
       - /DATA/AppData/$AppID/pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
-      - spliit_network
+      - pcs
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U spliit -d spliit"]
       interval: 5s
@@ -27,14 +54,10 @@ services:
           memory: 512M
 
   spliit:
-    image: ghcr.io/crazy-max/spliit:1.14.1
-    container_name: spliit-app
+    image: ghcr.io/crazy-max/spliit:1.17.0
+    container_name: spliit
     user: 0:0
-    depends_on:
-      db:
-        condition: service_healthy
-    expose:
-      - 3000
+    restart: unless-stopped
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -50,34 +73,38 @@ services:
       NODE_ENV: production
     volumes:
       - /DATA/AppData/$AppID/data:/data
-      - /DATA/AppData/$AppID/cache:/usr/app/.next/cache
-    restart: unless-stopped
+      - /DATA/AppData/$AppID/cache:/usr/app/.next/cache    
     networks:
-      - spliit_network
+      - pcs      
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
     deploy:
       resources:
         limits:
           memory: 1G
 
 networks:
-  spliit_network:
-    driver: bridge
+  pcs:
+    external: true
 
 x-casaos:
   architectures:
     - amd64
     - arm64
-  main: spliit
-  webui_port: 3000
+  main: nginxhashlock
+  webui_port: 80
   author: CasaOS Team
   category: Finance
   developer: Spliit Team
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/Spliit/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Spliit/thumbnail.png
+  index: /?hash=$AUTH_HASH  
+  store_app_id: Spliit
   title:
     en_us: Spliit
   tagline:
@@ -113,39 +140,48 @@ x-casaos:
   tips:
     before_install:
       en_us: |
+        -----------------------------
         **How to use:**
         1. Click "Create a group"
         2. Name it (e.g., "Beach Trip 2024")
         3. Add people (just their names)
         4. Start adding expenses
         5. Check "Balances" to see who owes whom
-        
+        -----------------------------        
         Share the group link with friends - no signup needed!
       ko_kr: |
+        -----------------------------
         **사용 방법:**
         1. "그룹 만들기" 클릭
         2. 이름 지정 (예: "제주도 여행 2024")
         3. 사람 추가 (이름만)
         4. 비용 추가 시작
         5. "잔액"을 확인하여 누가 누구에게 빚졌는지 확인
+        -----------------------------
       zh_cn: |
+        -----------------------------
         **使用方法：**
         1. 点击"创建群组"
         2. 命名（例如："2024海滩之旅"）
         3. 添加人员（只需姓名）
         4. 开始添加费用
         5. 查看"余额"了解谁欠谁
+        -----------------------------
       es_es: |
+        -----------------------------
         **Cómo usar:**
         1. Haz clic en "Crear un grupo"
         2. Nómbralo (ej: "Viaje Playa 2024")
         3. Añade personas (solo nombres)
         4. Empieza a añadir gastos
         5. Revisa "Saldos" para ver quién debe a quién
+        -----------------------------
       fr_fr: |
+        -----------------------------
         **Comment utiliser:**
         1. Cliquez sur "Créer un groupe"
         2. Nommez-le (ex: "Voyage Plage 2024")
         3. Ajoutez des personnes (juste les noms)
         4. Commencez à ajouter des dépenses
         5. Vérifiez "Soldes" pour voir qui doit à qui
+        -----------------------------
