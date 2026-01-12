@@ -1,0 +1,288 @@
+name: sist2
+
+services:
+  sist2-admin:
+    image: sist2app/sist2:x64-linux
+    user: 0:0
+    environment:
+      PUID: 0
+      PGID: 0
+      TZ: $TZ
+    volumes:
+      - /DATA/AppData/$AppID/admin-data:/sist2-admin
+      - /DATA/AppData/$AppID/indices:/indices
+      - /DATA:/host:ro
+    expose:
+      - 8080
+    ports:
+      - "4090:4090"
+    working_dir: /root/sist2-admin/
+    entrypoint: python3
+    command:
+      - /root/sist2-admin/sist2_admin/app.py
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+          cpus: '1.0'
+    restart: unless-stopped
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: sist2-admin
+  author: CasaOS Team
+  category: Utilities
+  pre-install-cmd: |
+    docker run --rm -v /DATA/AppData/$AppID:/data alpine:3.20 sh -c "
+      mkdir -p /data/admin-data /data/indices &&
+      chmod -R 755 /data
+    "
+  description:
+    en_us: |
+      Sist2 is a lightning-fast file system indexer and search engine using SQLite backend for simple, reliable operation without complex dependencies.
+      
+      **Key Features:**
+      - Fast multi-threaded file indexing with low memory usage
+      - SQLite backend - no Elasticsearch needed!
+      - OCR support for extracting text from PDFs and images (Tesseract)
+      - Full-text search across file names and content
+      - Archive support (ZIP, TAR, 7Z, RAR) with recursive scanning
+      - Incremental scanning (only updates changed files)
+      - Visual analytics and disk usage statistics
+      - Mobile-friendly web interface
+      - Automatic tagging via user scripts
+      
+      **Post-Installation Steps:**
+      1. **Start here**: Click the WebUI button in CasaOS or access sist2-admin at `https://8080-sist2-[username].nsl.sh`
+      2. Create new scan job with SQLite backend
+      3. Set scan path to `/host` (your entire /DATA directory)
+      4. Click "Index now" to build your index
+      5. Once indexing completes, access search at `http://[your-server-ip]:4090`
+      
+      **Two Web Interfaces:**
+      - **Port 8080 (Admin)**: Primary interface via HTTPS - configure scans and manage jobs (default WebUI)
+      - **Port 4090 (Search)**: Direct HTTP access via server IP - available after first index is created
+      
+      **Note:** The application indexes file metadata and content but never modifies your actual files. All files are mounted read-only.
+    ko_kr: |
+      Sist2는 복잡한 종속성 없이 간단하고 안정적인 작동을 위해 SQLite 백엔드를 사용하는 초고속 파일 시스템 인덱서 및 검색 엔진입니다.
+      
+      **주요 기능:**
+      - 낮은 메모리 사용량으로 빠른 멀티스레드 파일 인덱싱
+      - SQLite 백엔드 - Elasticsearch 불필요!
+      - PDF 및 이미지에서 텍스트 추출을 위한 OCR 지원 (Tesseract)
+      - 파일 이름 및 내용 전체 텍스트 검색
+      - 재귀 스캔을 통한 아카이브 지원 (ZIP, TAR, 7Z, RAR)
+      - 증분 스캔 (변경된 파일만 업데이트)
+      - 시각적 분석 및 디스크 사용량 통계
+      - 모바일 친화적 웹 인터페이스
+      - 사용자 스크립트를 통한 자동 태그 지정
+      
+      **설치 후 단계:**
+      1. **여기서 시작**: CasaOS의 WebUI 버튼 클릭 또는 `https://8080-sist2-[사용자명].nsl.sh`에서 sist2-admin 접속
+      2. SQLite 백엔드로 새 스캔 작업 생성
+      3. 스캔 경로를 `/host`로 설정 (전체 /DATA 디렉토리)
+      4. "Index now" 클릭하여 인덱스 구축
+      5. 인덱싱 완료 후 `http://[서버-IP]:4090`에서 검색 가능
+      
+      **두 개의 웹 인터페이스:**
+      - **포트 8080 (관리)**: HTTPS를 통한 기본 인터페이스 - 스캔 구성 및 작업 관리 (기본 WebUI)
+      - **포트 4090 (검색)**: 서버 IP를 통한 직접 HTTP 액세스 - 첫 인덱스 생성 후 사용 가능
+      
+      **참고:** 이 애플리케이션은 파일 메타데이터와 내용을 인덱싱하지만 실제 파일을 수정하지 않습니다. 모든 파일은 읽기 전용으로 마운트됩니다.
+    fr_fr: |
+      Sist2 est un indexeur de système de fichiers ultra-rapide et un moteur de recherche utilisant un backend SQLite pour un fonctionnement simple et fiable sans dépendances complexes.
+      
+      **Fonctionnalités clés:**
+      - Indexation rapide multi-thread avec faible utilisation de la mémoire
+      - Backend SQLite - Elasticsearch non requis!
+      - Support OCR pour extraire le texte des PDF et images (Tesseract)
+      - Recherche en texte intégral sur les noms et le contenu des fichiers
+      - Support des archives (ZIP, TAR, 7Z, RAR) avec scan récursif
+      - Scan incrémental (ne met à jour que les fichiers modifiés)
+      - Analyses visuelles et statistiques d'utilisation du disque
+      - Interface Web adaptée aux mobiles
+      - Balisage automatique via scripts utilisateur
+      
+      **Étapes post-installation:**
+      1. **Commencez ici**: Cliquez sur le bouton WebUI dans CasaOS ou accédez à `https://8080-sist2-[nomutilisateur].nsl.sh`
+      2. Créez un nouveau travail de scan avec backend SQLite
+      3. Définissez le chemin de scan sur `/host` (tout votre répertoire /DATA)
+      4. Cliquez sur "Index now" pour construire votre index
+      5. Une fois l'indexation terminée, accédez à `http://[ip-serveur]:4090`
+      
+      **Deux interfaces Web:**
+      - **Port 8080 (Admin)**: Interface principale via HTTPS - configurer les scans et gérer les tâches (WebUI par défaut)
+      - **Port 4090 (Recherche)**: Accès HTTP direct via IP serveur - disponible après la création du premier index
+      
+      **Note:** L'application indexe les métadonnées et le contenu des fichiers mais ne modifie jamais vos fichiers réels. Tous les fichiers sont montés en lecture seule.
+    es_es: |
+      Sist2 es un indexador de sistema de archivos ultrarrápido y motor de búsqueda que utiliza backend SQLite para una operación simple y confiable sin dependencias complejas.
+      
+      **Características principales:**
+      - Indexación rápida multiproceso con bajo uso de memoria
+      - Backend SQLite - ¡no se requiere Elasticsearch!
+      - Soporte OCR para extraer texto de PDFs e imágenes (Tesseract)
+      - Búsqueda de texto completo en nombres y contenido de archivos
+      - Soporte de archivos (ZIP, TAR, 7Z, RAR) con escaneo recursivo
+      - Escaneo incremental (solo actualiza archivos modificados)
+      - Análisis visual y estadísticas de uso del disco
+      - Interfaz web compatible con dispositivos móviles
+      - Etiquetado automático mediante scripts de usuario
+      
+      **Pasos posteriores a la instalación:**
+      1. **Comience aquí**: Haga clic en el botón WebUI en CasaOS o acceda a `https://8080-sist2-[nombreusuario].nsl.sh`
+      2. Cree un nuevo trabajo de escaneo con backend SQLite
+      3. Establezca la ruta de escaneo en `/host` (todo su directorio /DATA)
+      4. Haga clic en "Index now" para construir su índice
+      5. Una vez completada la indexación, acceda a `http://[ip-servidor]:4090`
+      
+      **Dos interfaces web:**
+      - **Puerto 8080 (Admin)**: Interfaz principal vía HTTPS - configurar escaneos y gestionar trabajos (WebUI predeterminada)
+      - **Puerto 4090 (Búsqueda)**: Acceso HTTP directo vía IP del servidor - disponible después de crear el primer índice
+      
+      **Nota:** La aplicación indexa metadatos y contenido de archivos pero nunca modifica sus archivos reales. Todos los archivos están montados como solo lectura.
+    zh_cn: |
+      Sist2 是一个闪电般快速的文件系统索引器和搜索引擎,使用 SQLite 后端实现简单可靠的操作,无需复杂的依赖项。
+      
+      **主要功能:**
+      - 低内存使用的快速多线程文件索引
+      - SQLite 后端 - 不需要 Elasticsearch!
+      - OCR 支持从 PDF 和图像中提取文本 (Tesseract)
+      - 对文件名和内容的全文搜索
+      - 支持递归扫描的存档文件 (ZIP、TAR、7Z、RAR)
+      - 增量扫描(仅更新更改的文件)
+      - 可视化分析和磁盘使用统计
+      - 移动友好的 Web 界面
+      - 通过用户脚本自动标记
+      
+      **安装后步骤:**
+      1. **从这里开始**: 点击 CasaOS 中的 WebUI 按钮或在 `https://8080-sist2-[用户名].nsl.sh` 访问 sist2-admin
+      2. 使用 SQLite 后端创建新的扫描作业
+      3. 将扫描路径设置为 `/host`(整个 /DATA 目录)
+      4. 点击 "Index now" 构建索引
+      5. 索引完成后,在 `http://[服务器IP]:4090` 访问搜索
+      
+      **两个 Web 界面:**
+      - **端口 8080 (管理)**: 通过 HTTPS 的主界面 - 配置扫描和管理作业 (默认 WebUI)
+      - **端口 4090 (搜索)**: 通过服务器 IP 的直接 HTTP 访问 - 创建第一个索引后可用
+      
+      **注意:** 应用程序索引文件元数据和内容,但永远不会修改您的实际文件。所有文件都以只读方式挂载。
+  developer: simon987 / sist2app
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Sist2/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Sist2/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Sist2/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Sist2/screenshot-3.png
+  tagline:
+    en_us: Lightning-fast file system indexer with SQLite backend - no Elasticsearch needed
+    ko_kr: SQLite 백엔드를 사용한 초고속 파일 시스템 인덱서 - Elasticsearch 불필요
+    fr_fr: Indexeur ultra-rapide avec backend SQLite - Elasticsearch non requis
+    es_es: Indexador ultrarrápido con backend SQLite - no se requiere Elasticsearch
+    zh_cn: 使用 SQLite 后端的超快速文件系统索引器 - 不需要 Elasticsearch
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Sist2/thumbnail.png
+  title:
+    en_us: Sist2
+  tips:
+    before_install:
+      en_us: |
+        **Simple Setup - No Elasticsearch!**
+        
+        Sist2 uses SQLite backend for simple, reliable operation without complex database setup.
+        
+        **Important Notes:**
+        - Initial scan must be configured via admin interface after installation
+        - Large file systems may take time for initial indexing
+        - OCR processing requires additional time but enables content search in PDFs/images
+        - All data stored in `/DATA/AppData/sist2/indices/`
+        
+        **Two Web Interfaces:**
+        - **Port 8080** (Admin): Default WebUI via HTTPS - Configure scans and settings (start here)
+        - **Port 4090** (Search): Direct HTTP access via server IP - Search indexed files (available after first scan)
+        
+        **Security Note:**
+        - Sist2 has read-only access to /DATA for indexing purposes
+        - No files are ever modified, only metadata is collected
+        - All configuration isolated to AppData directory
+      ko_kr: |
+        **간단한 설정 - Elasticsearch 불필요!**
+        
+        Sist2는 복잡한 데이터베이스 설정 없이 간단하고 안정적인 작동을 위해 SQLite 백엔드를 사용합니다.
+        
+        **중요 참고사항:**
+        - 설치 후 관리 인터페이스를 통해 초기 스캔을 구성해야 합니다
+        - 큰 파일 시스템은 초기 인덱싱에 시간이 걸릴 수 있습니다
+        - OCR 처리는 추가 시간이 필요하지만 PDF/이미지의 내용 검색이 가능합니다
+        - 모든 데이터는 `/DATA/AppData/sist2/indices/`에 저장됩니다
+        
+        **두 개의 웹 인터페이스:**
+        - **포트 8080** (관리): HTTPS를 통한 기본 WebUI - 스캔 및 설정 구성 (여기서 시작)
+        - **포트 4090** (검색): 서버 IP를 통한 직접 HTTP 액세스 - 인덱싱된 파일 검색 (첫 스캔 후 사용 가능)
+        
+        **보안 참고:**
+        - Sist2는 인덱싱 목적으로 /DATA에 대한 읽기 전용 액세스 권한을 가집니다
+        - 파일은 수정되지 않으며 메타데이터만 수집됩니다
+        - 모든 구성은 AppData 디렉토리에 격리됩니다
+      fr_fr: |
+        **Configuration simple - Elasticsearch non requis!**
+        
+        Sist2 utilise un backend SQLite pour un fonctionnement simple et fiable sans configuration complexe de base de données.
+        
+        **Notes importantes:**
+        - Le scan initial doit être configuré via l'interface d'administration après l'installation
+        - Les grands systèmes de fichiers peuvent prendre du temps pour l'indexation initiale
+        - Le traitement OCR nécessite du temps supplémentaire mais permet la recherche de contenu dans les PDF/images
+        - Toutes les données stockées dans `/DATA/AppData/sist2/indices/`
+        
+        **Deux interfaces Web:**
+        - **Port 8080** (Admin): WebUI par défaut via HTTPS - Configurez les scans et les paramètres (commencez ici)
+        - **Port 4090** (Recherche): Accès HTTP direct via IP serveur - Recherchez les fichiers indexés (disponible après le premier scan)
+        
+        **Note de sécurité:**
+        - Sist2 a un accès en lecture seule à /DATA à des fins d'indexation
+        - Aucun fichier n'est jamais modifié, seules les métadonnées sont collectées
+        - Toute la configuration est isolée dans le répertoire AppData
+      es_es: |
+        **Configuración simple - ¡Elasticsearch no requerido!**
+        
+        Sist2 utiliza backend SQLite para una operación simple y confiable sin configuración compleja de base de datos.
+        
+        **Notas importantes:**
+        - El escaneo inicial debe configurarse mediante la interfaz de administración después de la instalación
+        - Los sistemas de archivos grandes pueden tardar en la indexación inicial
+        - El procesamiento OCR requiere tiempo adicional pero permite la búsqueda de contenido en PDF/imágenes
+        - Todos los datos almacenados en `/DATA/AppData/sist2/indices/`
+        
+        **Dos interfaces web:**
+        - **Puerto 8080** (Admin): WebUI predeterminada vía HTTPS - Configure escaneos y ajustes (comience aquí)
+        - **Puerto 4090** (Búsqueda): Acceso HTTP directo vía IP del servidor - Busque archivos indexados (disponible después del primer escaneo)
+        
+        **Nota de seguridad:**
+        - Sist2 tiene acceso de solo lectura a /DATA con fines de indexación
+        - Nunca se modifican archivos, solo se recopilan metadatos
+        - Toda la configuración está aislada en el directorio AppData
+      zh_cn: |
+        **简单设置 - 不需要 Elasticsearch!**
+        
+        Sist2 使用 SQLite 后端实现简单可靠的操作,无需复杂的数据库设置。
+        
+        **重要注意事项:**
+        - 安装后必须通过管理界面配置初始扫描
+        - 大型文件系统的初始索引可能需要时间
+        - OCR 处理需要额外时间,但可以在 PDF/图像中进行内容搜索
+        - 所有数据存储在 `/DATA/AppData/sist2/indices/`
+        
+        **两个 Web 界面:**
+        - **端口 8080**(管理): 通过 HTTPS 的默认 WebUI - 配置扫描和设置(从这里开始)
+        - **端口 4090**(搜索): 通过服务器 IP 的直接 HTTP 访问 - 搜索索引文件(第一次扫描后可用)
+        
+        **安全说明:**
+        - Sist2 对 /DATA 具有只读访问权限以进行索引
+        - 永远不会修改文件,只收集元数据
+        - 所有配置都隔离到 AppData 目录
+  index: /
+  webui_port: 8080
+  scheme: https
+  store_app_id: sist2
