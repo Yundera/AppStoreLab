@@ -206,6 +206,17 @@ x-casaos:
         - Sist2 has read-only access to /DATA for indexing purposes
         - No files are ever modified, only metadata is collected
         - All configuration isolated to AppData directory
+
+        **Post-Installation Steps:**
+        1. **Start here**: Click the WebUI button in CasaOS or access sist2-admin at `https://8080-sist2-[username].nsl.sh`
+        2. Create new scan job with SQLite backend
+        3. Set scan path to `/host` (your entire /DATA directory)
+        4. Click "Index now" to build your index
+        5. Once indexing completes, access search at `http://[your-server-ip]:4090`
+      
+        **Two Web Interfaces:**
+        - **Port 8080 (Admin)**: Primary interface via HTTPS - configure scans and manage jobs (default WebUI)
+        - **Port 4090 (Search)**: Direct HTTP access via server IP - available after first index is created
       ko_kr: |
         **간단한 설정 - Elasticsearch 불필요!**
         
