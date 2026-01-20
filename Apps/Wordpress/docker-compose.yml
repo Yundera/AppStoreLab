@@ -9,7 +9,7 @@ services:
     expose:
       - 80                              # Web UI port for NSL router
     volumes:
-      - /DATA/AppData/$AppID/html:/var/www/html  # WordPress files and uploads 
+      - /DATA/AppData/$AppID/html/:/var/www/html  # WordPress files and uploads 
     environment:
       PUID: $PUID
       PGID: $PGID
@@ -58,7 +58,7 @@ services:
     restart: unless-stopped
     user: 0:0
     volumes:
-      - /DATA/AppData/$AppID/db:/var/lib/mysql   # Database files storage
+      - /DATA/AppData/$AppID/db/:/var/lib/mysql   # Database files storage
     environment:
       MYSQL_ROOT_PASSWORD: $PCS_DEFAULT_PASSWORD  # MySQL root password (auto-generated)
       MYSQL_DATABASE: wordpress          # Database to create on startup
