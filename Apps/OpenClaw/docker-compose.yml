@@ -19,7 +19,7 @@ services:
       - pcs
 
   openclaw:
-    image: alpine/openclaw:latest
+    image: alpine/openclaw:2026.1.30
     deploy:
       resources:
         limits:
@@ -300,6 +300,7 @@ x-casaos:
     cat > /DATA/AppData/openclaw/openclaw.json << 'OCEOF'
     {
       "gateway": {
+        "trustedProxies": ["172.16.0.0/12", "10.0.0.0/8", "192.168.0.0/16"],
         "controlUi": {
           "enabled": true,
           "allowInsecureAuth": true,
