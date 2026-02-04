@@ -19,14 +19,14 @@ nginx provides a simple way to host static websites, HTML pages, JavaScript appl
 
 After installation:
 
-1. Navigate to `/DATA/AppData/nginx/www/`
+1. Navigate to `/DATA/AppData/Nginx/www/`
 2. Upload your website files (HTML, CSS, JavaScript, images, etc.)
 3. Access your site at `https://nginx-[username].nsl.sh/`
 
 ### File Structure
 
 ```
-/DATA/AppData/nginx/
+/DATA/AppData/Nginx/
 ├── www/              # Your website files
 │   ├── index.html   # Main page
 │   ├── css/         # Stylesheets
@@ -45,7 +45,7 @@ The included `nginx.conf` provides:
 - SPA routing support (serves index.html for all routes)
 - Hidden file protection
 
-To customize, edit `/DATA/AppData/nginx/nginx.conf` and restart the app.
+To customize, edit `/DATA/AppData/Nginx/nginx.conf` and restart the app.
 
 ## Perfect For
 
@@ -110,7 +110,7 @@ Before submitting:
 
 1. Test locally:
    ```bash
-   cd Apps/nginx
+   cd Apps/Nginx
    docker compose up -d
    ```
 

@@ -1,4 +1,4 @@
-name: nginx
+name: Nginx
 
 services:
   nginx:
@@ -13,11 +13,11 @@ services:
       - 80
     volumes:
       - type: bind
-        source: /DATA/AppData/nginx/www/
+        source: /DATA/AppData/Nginx/www/
         target: /usr/share/nginx/html
         read_only: false
       - type: bind
-        source: /DATA/AppData/nginx/nginx.conf
+        source: /DATA/AppData/Nginx/nginx.conf
         target: /etc/nginx/conf.d/default.conf
         read_only: true
     environment:
@@ -65,7 +65,7 @@ x-casaos:
       • **Modern Web Support** — Full support for SPAs, PWAs, and modern JavaScript
       • **Production Ready** — Battle-tested nginx powers 30% of the internet
 
-      Simply upload your HTML, CSS, JavaScript, and assets to `/DATA/AppData/nginx/www/` and your site is instantly live. No databases, no complex configuration, just pure static file hosting done right.
+      Simply upload your HTML, CSS, JavaScript, and assets to `/DATA/AppData/Nginx/www/` and your site is instantly live. No databases, no complex configuration, just pure static file hosting done right.
 
       **🚀 Why Choose nginx?**
 
@@ -112,21 +112,21 @@ x-casaos:
       • **现代 Web 支持** — 完全支持 SPA、PWA 和现代 JavaScript
       • **生产就绪** — 经过实战检验的 nginx 为 30% 的互联网提供动力
 
-      只需将您的 HTML、CSS、JavaScript 和资源上传到 `/DATA/AppData/nginx/www/`，您的网站就会立即上线。无需数据库，无需复杂配置，只需纯静态文件托管。
+      只需将您的 HTML、CSS、JavaScript 和资源上传到 `/DATA/AppData/Nginx/www/`，您的网站就会立即上线。无需数据库，无需复杂配置，只需纯静态文件托管。
   developer: nginx
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nginx/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nginx/screenshot-1.png
   tagline:
     en_us: Lightning-fast static website hosting powered by nginx
     zh_cn: 由 nginx 提供支持的闪电般快速静态网站托管
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nginx/thumbnail.png
   tips:
     before_install:
       en_us: |
         **📁 Setup Instructions**
         After installation, add your website files to:
-        `/DATA/AppData/nginx/www/`
+        `/DATA/AppData/Nginx/www/`
 
         **Quick Start:**
         1. Install the app
@@ -135,7 +135,7 @@ x-casaos:
 
         **File Structure:**
         ```
-        /DATA/AppData/nginx/
+        /DATA/AppData/Nginx/
         ├── www/              # Your website files go here
         │   └── index.html   # Main page
         └── nginx.conf       # nginx configuration
@@ -147,11 +147,11 @@ x-casaos:
     en_us: Nginx
   index: /
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/nginx/www &&
-    if [ ! -f /DATA/AppData/nginx/www/index.html ]; then
-      wget -q https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/pre-install/index.html -O /DATA/AppData/nginx/www/index.html
+    mkdir -p /DATA/AppData/Nginx/www &&
+    if [ ! -f /DATA/AppData/Nginx/www/index.html ]; then
+      wget -q https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nginx/pre-install/index.html -O /DATA/AppData/Nginx/www/index.html
     fi &&
-    if [ ! -f /DATA/AppData/nginx/nginx.conf ]; then
-      wget -q https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/nginx/pre-install/nginx.conf -O /DATA/AppData/nginx/nginx.conf
+    if [ ! -f /DATA/AppData/Nginx/nginx.conf ]; then
+      wget -q https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Nginx/pre-install/nginx.conf -O /DATA/AppData/Nginx/nginx.conf
     fi &&
     chmod -R 755 /DATA/AppData/nginx

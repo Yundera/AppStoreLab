@@ -1,0 +1,49 @@
+# Caddy configuration for static file serving with automatic HTTPS
+# Self-signed TLS certificates are generated automatically
+
+:443 {
+    # Enable automatic self-signed TLS certificates
+    tls internal
+
+    # Serve static files from /srv directory
+    root * /srv
+    file_server
+
+    # Enable gzip compression
+    encode gzip
+
+    # SPA support - try files then fall back to index.html
+    try_files {path} /index.html
+
+    # Security headers
+    header {
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        # Remove server header
+        -Server
+    }
+
+    # Cache static assets
+    @static {
+        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # Deny access to hidden files
+    @hidden {
+        path */.*
+    }
+    respond @hidden 404
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+# HTTP to HTTPS redirect
+:80 {
+    redir https://{host}{uri} permanent
+}
