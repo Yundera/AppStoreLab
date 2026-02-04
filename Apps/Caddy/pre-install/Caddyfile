@@ -39,9 +39,11 @@
     }
 }
 
-# External access for custom domains with automatic self-signed TLS
+# External access for custom domains and direct IP (IPv4/IPv6) with self-signed TLS
 :443 {
-    tls internal
+    tls internal {
+        on_demand
+    }
 
     root * /srv
     file_server
