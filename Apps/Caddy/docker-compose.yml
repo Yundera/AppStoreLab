@@ -4,7 +4,7 @@ services:
   caddy:
     image: caddy:2.9.1-alpine
     container_name: caddy
-    user: "0:0"
+    user: $PUID:$PGID
     restart: unless-stopped
     network_mode: bridge
     ports:
