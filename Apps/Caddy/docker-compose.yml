@@ -155,6 +155,9 @@ x-casaos:
         **Access Methods:**
         - **NSL.SH (internal):** `https://caddy-$domain/` - HTTPS handled by NSL
         - **Custom domain (external):** Point your domain to port 443 for direct TLS
+        
+        **IPv6 Direct Access:**
+        Then access your site at: `https://[$PCS_PUBLIC_IPV6]`
 
         **Custom Domain Access:**
         Port 443 is exposed for external access with self-signed TLS.
