@@ -42,8 +42,3 @@
         format console
     }
 }
-
-# HTTP to HTTPS redirect
-:80 {
-    redir https://{host}{uri} permanent
-}
