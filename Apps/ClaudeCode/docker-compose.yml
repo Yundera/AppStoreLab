@@ -84,12 +84,12 @@ x-casaos:
         Requirements:
         - Anthropic API key (get one at https://console.anthropic.com/)
 
-        Default login password: {default_pwd}
+        Default login password: {$default_pwd}
       zh_cn: |
         要求：
         - Anthropic API 密钥（获取地址：https://console.anthropic.com/）
 
-        默认登录密码：{default_pwd}
+        默认登录密码：{$default_pwd}
   pre-install-cmd: |
     mkdir -p /DATA/AppData/claude-code/workspace &&
     if [ ! -f /DATA/AppData/claude-code/workspace/CLAUDE.md ]; then
