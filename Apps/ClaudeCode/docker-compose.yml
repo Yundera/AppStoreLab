@@ -15,6 +15,15 @@ services:
       - TTYD_PORT=7681
       - TTYD_URL=http://localhost:7681
     volumes:
+      # Docker socket for container management
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      # Used for PCS integration
+      - type: bind
+        source: /DATA/
+        target: /DATA/
+      # Claude Code workspace persistence
       - type: bind
         source: /DATA/AppData/claude-code/workspace
         target: /home/claude/workspace
@@ -95,4 +104,7 @@ x-casaos:
         获取地址：https://console.anthropic.com/
   pre-install-cmd: |
     mkdir -p /DATA/AppData/claude-code/workspace &&
+    if [ ! -f /DATA/AppData/claude-code/workspace/CLAUDE.md ]; then
+      wget -q https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/ClaudeCode/pre-install/CLAUDE.md -O /DATA/AppData/claude-code/workspace/CLAUDE.md
+    fi &&
     chown -R 1000:1000 /DATA/AppData/claude-code
