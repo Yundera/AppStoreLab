@@ -1,19 +1,17 @@
-name: claude-code
+name: claude
 
 services:
-  claude-code:
+  claude:
     image: ghcr.io/worph/claude-code-container:1.0.1
-    container_name: claude-code
+    container_name: claude
     restart: unless-stopped
     user: 0:0
     expose:
-      - 8080
+      - 80
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY-"Please fill you key here"}
       - AUTH_PASSWORD=$default_pwd
-      - PROXY_PORT=8080
-      - TTYD_PORT=7681
-      - TTYD_URL=http://localhost:7681
+      - PROXY_PORT=80
     volumes:
       # Docker socket for container management
       - type: bind
@@ -43,7 +41,7 @@ x-casaos:
   architectures:
     - amd64
     - arm64
-  main: claude-code
+  main: claude
   author: Yundera
   category: Developer
   description:
@@ -79,29 +77,19 @@ x-casaos:
     en_us: Claude Code
     zh_cn: Claude Code
   index: /
-  webui_port: 8080
-  envs:
-    - container: ANTHROPIC_API_KEY
-      description:
-        en_us: Your Anthropic API key for Claude
-        zh_cn: 您的 Anthropic API 密钥
-    - container: AUTH_PASSWORD
-      description:
-        en_us: Password for terminal access (auto-generated)
-        zh_cn: 终端访问密码（自动生成）
-  volumes:
-    - container: /home/claude/workspace
-      description:
-        en_us: Claude Code workspace directory
-        zh_cn: Claude Code 工作区目录
+  webui_port: 80
   tips:
     before_install:
       en_us: |
-        You need an Anthropic API key to use Claude Code.
-        Get one at: https://console.anthropic.com/
+        Requirements:
+        - Anthropic API key (get one at https://console.anthropic.com/)
+
+        Default login password: {default_pwd}
       zh_cn: |
-        使用 Claude Code 需要 Anthropic API 密钥。
-        获取地址：https://console.anthropic.com/
+        要求：
+        - Anthropic API 密钥（获取地址：https://console.anthropic.com/）
+
+        默认登录密码：{default_pwd}
   pre-install-cmd: |
     mkdir -p /DATA/AppData/claude-code/workspace &&
     if [ ! -f /DATA/AppData/claude-code/workspace/CLAUDE.md ]; then
