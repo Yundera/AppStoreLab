@@ -10,7 +10,7 @@ services:
     ports:
       - 443:443
     expose:
-      - 443
+      - 80
     volumes:
       - type: bind
         source: /DATA/AppData/caddy/www/
@@ -43,7 +43,7 @@ x-casaos:
     - arm64
     - arm
   main: caddy
-  webui_port: 443
+  webui_port: 80
   author: Yundera Team
   category: WEB
   description:
@@ -140,7 +140,7 @@ x-casaos:
         **Quick Start:**
         1. Install the app
         2. Upload your website files to the www directory
-        3. Access your site at: `https://443-caddy-$domain/`
+        3. Access your site at: `https://caddy-$domain/`
 
         **File Structure:**
         ```
@@ -152,17 +152,16 @@ x-casaos:
         └── config/          # Caddy config storage
         ```
 
-        **HTTPS Access:**
-        Caddy automatically generates self-signed TLS certificates.
-        Your browser may show a security warning - this is normal for self-signed certs.
-        Click "Advanced" and "Proceed" to access your site securely.
+        **Access Methods:**
+        - **NSL.SH (internal):** `https://caddy-$domain/` - HTTPS handled by NSL
+        - **Custom domain (external):** Point your domain to port 443 for direct TLS
 
-        **IPv6 Direct Access:**
-        Access your site at: `https://[$PCS_PUBLIC_IPV6]`
+        **Custom Domain Access:**
+        Port 443 is exposed for external access with self-signed TLS.
+        Your browser may show a security warning - click "Advanced" and "Proceed".
   title:
     en_us: Caddy
   index: /
-  scheme: https
   pre-install-cmd: |
     mkdir -p /DATA/AppData/caddy/{www,data,config} &&
     if [ ! -f /DATA/AppData/caddy/www/index.html ]; then
