@@ -2,7 +2,7 @@ name: claude-code
 
 services:
   claude-code:
-    image: ghcr.io/yundera/claude-code-container:main
+    image: ghcr.io/worph/claude-code-container:v1.0.1
     container_name: claude-code
     restart: unless-stopped
     user: 0:0
