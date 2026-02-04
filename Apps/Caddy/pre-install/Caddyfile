@@ -2,6 +2,11 @@
 # Port 80: Internal access via NSL.SH routing (HTTPS handled by NSL)
 # Port 443: External access for custom domains with automatic TLS
 
+{
+    # Disable automatic HTTP->HTTPS redirects (NSL.SH handles HTTPS)
+    auto_https disable_redirects
+}
+
 # Internal access via NSL.SH - clean URLs like caddy-user.nsl.sh
 :80 {
     root * /srv
