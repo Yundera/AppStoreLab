@@ -1,10 +1,12 @@
 # Caddy configuration for static file serving
 # Port 80: Internal access via NSL.SH routing (HTTPS handled by NSL)
-# Port 443: External access for custom domains with automatic TLS
+# Port 443: External access for custom domains and direct IP with automatic TLS
 
 {
     # Disable automatic HTTP->HTTPS redirects (NSL.SH handles HTTPS)
     auto_https disable_redirects
+    # Default SNI for requests without hostname (e.g., direct IP access)
+    default_sni localhost
 }
 
 # Internal access via NSL.SH - clean URLs like caddy-user.nsl.sh
@@ -45,7 +47,9 @@
 }
 
 # External access for custom domains and direct IP (IPv4/IPv6) with self-signed TLS
-:443 {
+# Using https:// catch-all instead of :443 to properly handle IP-based access
+# The :443 matcher fails on-demand TLS permission checks for direct IP requests
+https:// {
     tls internal {
         on_demand
     }
