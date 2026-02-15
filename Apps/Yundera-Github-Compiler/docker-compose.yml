@@ -37,65 +37,71 @@ services:
     environment:
       # Application settings
       WEBUI_PORT: "3000"
-      
+
       # CasaOS integration
       DEPLOYMENT_MODE: "appstore"
       CASAOS_API_HOST: "localhost"
       CASAOS_API_PORT: "8080"
-      DATA_ROOT: $DATA_ROOT
-      
-      # Yundera platform integration (unused - set to blank)
-      DOMAIN: ""
-      PROVIDER_STR: ""
-      UID: ""
-      DEFAULT_PWD: ""
-      PUBLIC_IP: ""
-      DEFAULT_USER: ""
-      
-      # Authentication and paths (unused - set to blank)
-      JWT_SECRET: ""
-      AUTHORITY_ENDPOINT: ""
-      COMPOSE_FOLDER_PATH: ""
-      BASE_PATH: ""
-      MOCK: ""
-      
+
       # Pass through the host's CasaOS environment variables.
       # These will be populated by the AppStore during installation.
+
+      # Hardcoded/built-in variables
       PUID: $PUID
       PGID: $PGID
+      TZ: $TZ
+      DefaultUserName: $DefaultUserName
+      DefaultPassword: $DefaultPassword
+
+      # CasaOS container OS environment variables
+      default_pwd: $default_pwd
+      public_ip: $public_ip
+      domain: $domain
+      USER: $USER
+
+      # PCS environment variables (MUST be included)
+      PCS_DEFAULT_PASSWORD: $PCS_DEFAULT_PASSWORD
+      PCS_DOMAIN: $PCS_DOMAIN
+      PCS_DATA_ROOT: $PCS_DATA_ROOT
+      PCS_PUBLIC_IP: $PCS_PUBLIC_IP
+      PCS_PUBLIC_IPV6: $PCS_PUBLIC_IPV6
+      PCS_EMAIL: $PCS_EMAIL
+
+      # REF variables
       REF_DOMAIN: $REF_DOMAIN
       REF_NET: $REF_NET
-      REF_PORT: $REF_PORT
       REF_SCHEME: $REF_SCHEME
+      REF_PORT: $REF_PORT
       REF_SEPARATOR: $REF_SEPARATOR
-      
-      # Debug/logging settings (unused - set to blank)
-      LOG_APPS_BEACON: ""      
-      
-      user: $user
-      default_pwd: $APP_DEFAULT_PASSWORD
-      public_ip: $APP_PUBLIC_IP
+      REF_DEFAULT_PORT: $REF_DEFAULT_PORT
+
+      # Data root
+      DATA_ROOT: $DATA_ROOT
+
+      # SMTP variables
+      SMTP_HOST: $SMTP_HOST
+      SMTP_PORT: $SMTP_PORT
 
     volumes:        
       # cloned repos
       - type: bind
-        source: /DATA/AppData/yunderagithubcompiler/repos
-        target: /app/repos
+        source: /DATA/AppData/yunderagithubcompiler/repos/
+        target: /app/repos/
 
       # persistent UI data storage
       - type: bind
-        source: /DATA/AppData/yunderagithubcompiler/uidata
-        target: /app/uidata
+        source: /DATA/AppData/yunderagithubcompiler/uidata/
+        target: /app/uidata/
 
       # Writable mount for app metadata
       - type: bind
-        source: /DATA/AppData
-        target: /DATA/AppData
+        source: /DATA/AppData/
+        target: /DATA/AppData/
 
       # Bind mount for the main app directory
       - type: bind
-        source: /DATA/AppData/casaos/apps/yunderagithubcompiler
-        target: /DATA/AppData/casaos/apps/yunderagithubcompiler
+        source: /DATA/AppData/casaos/apps/yunderagithubcompiler/
+        target: /DATA/AppData/casaos/apps/yunderagithubcompiler/
         read_only: true
 
       - type: bind
@@ -154,7 +160,3 @@ x-casaos:
   is_uncontrolled: false
   index: /?hash=$AUTH_HASH
   webui_port: 3000
-  pre-install-cmd: |
-    mkdir -p /DATA/AppData/yunderagithubcompiler/{repos,uidata} 2>/dev/null
-    chown -R ubuntu:988 /DATA/AppData/yunderagithubcompiler/ 2>/dev/null || true
-    chmod -R 755 /DATA/AppData/yunderagithubcompiler/ 2>/dev/null || true
