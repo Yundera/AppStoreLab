@@ -87,14 +87,14 @@ services:
       - PUID=0
       - PGID=0
       - TZ=$TZ
-      - DOMAIN=$domain
+      - DOMAIN=$APP_DOMAIN
       # Storage Backend connection settings (dynamic domain) / Storage Backend 연결 설정 (동적 도메인 사용)
-      - VITE_APP_BACKEND_V2_GET_URL=https://8081-$domain/api/v2/scenes/
-      - VITE_APP_BACKEND_V2_POST_URL=https://8081-$domain/api/v2/scenes/
-      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-$domain/api/v2
+      - VITE_APP_BACKEND_V2_GET_URL=https://8081-$APP_DOMAIN/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=https://8081-$APP_DOMAIN/api/v2/scenes/
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=https://8081-$APP_DOMAIN/api/v2
       - VITE_APP_STORAGE_BACKEND=http
       # Room Server connection settings (dynamic domain) / Room Server 연결 설정 (동적 도메인 사용)
-      - VITE_APP_WS_SERVER_URL=wss://3002-$domain
+      - VITE_APP_WS_SERVER_URL=wss://3002-$APP_DOMAIN
       # Disable Firebase / Firebase 비활성화
       - VITE_APP_FIREBASE_CONFIG={}
     depends_on:
@@ -241,7 +241,7 @@ x-casaos:
         - No accounts needed ✅
         
         **🔧 Auto-Configuration:**
-        - Uses `$domain` for automatic setup
+        - Uses `$APP_DOMAIN` for automatic setup
         - No manual URL configuration needed
         - Works for any username automatically
         
@@ -267,7 +267,7 @@ x-casaos:
         - Aucun compte nécessaire ✅
         
         **🔧 Configuration automatique :**
-        - Utilise `$domain` pour la configuration automatique
+        - Utilise `$APP_DOMAIN` pour la configuration automatique
         - Aucune configuration d'URL manuelle nécessaire
         - Fonctionne automatiquement pour tout nom d'utilisateur
         
@@ -287,7 +287,7 @@ x-casaos:
         - 계정 불필요 ✅
         
         **🔧 자동 설정:**
-        - `$domain`을 사용한 자동 설정
+        - `$APP_DOMAIN`을 사용한 자동 설정
         - 수동 URL 설정 불필요
         - 모든 사용자명에 자동 작동
         
@@ -307,7 +307,7 @@ x-casaos:
         - 无需账户 ✅
         
         **🔧 自动配置：**
-        - 使用 `$domain` 进行自动设置
+        - 使用 `$APP_DOMAIN` 进行自动设置
         - 无需手动 URL 配置
         - 自动适用于任何用户名
         
@@ -327,7 +327,7 @@ x-casaos:
         - No se necesitan cuentas ✅
         
         **🔧 Configuración automática:**
-        - Usa `$domain` para configuración automática
+        - Usa `$APP_DOMAIN` para configuración automática
         - No se necesita configuración manual de URL
         - Funciona automáticamente para cualquier nombre de usuario
         

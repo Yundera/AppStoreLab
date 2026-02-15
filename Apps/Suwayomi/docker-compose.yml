@@ -19,7 +19,7 @@ services:
       # Authentication settings - Simple Login method
       AUTH_MODE: simple_login                        # Authentication mode
       AUTH_USERNAME: admin                           # Admin username
-      AUTH_PASSWORD: $PCS_DEFAULT_PASSWORD           # Admin password
+      AUTH_PASSWORD: $APP_DEFAULT_PASSWORD           # Admin password
       
       # Download settings
       DOWNLOAD_AS_CBZ: true                          # Download manga as CBZ format
@@ -201,7 +201,7 @@ x-casaos:
         **Getting Started**
         | Username | Password                |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
         
         **How to use:**
         1. Open the website in your browser
@@ -218,7 +218,7 @@ x-casaos:
         **시작하기**
         | 사용자명 | 비밀번호                |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
         
         **사용 방법:**
         1. 브라우저에서 웹사이트 열기
@@ -235,7 +235,7 @@ x-casaos:
         **开始使用**
         | 用户名   | 密码                    |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
         
         **使用方法:**
         1. 在浏览器中打开网站
@@ -252,7 +252,7 @@ x-casaos:
         **Commencer**
         | Nom d'utilisateur | Mot de passe            |
         | ----------------- | ----------------------- |
-        | `admin`           | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`           | `$APP_DEFAULT_PASSWORD` |
         
         **Comment utiliser:**
         1. Ouvrez le site web dans votre navigateur
@@ -269,7 +269,7 @@ x-casaos:
         **Comenzar**
         | Usuario  | Contraseña              |
         | -------- | ----------------------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
         
         **Cómo usar:**
         1. Abre el sitio web en tu navegador

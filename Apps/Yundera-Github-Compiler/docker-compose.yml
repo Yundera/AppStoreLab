@@ -73,8 +73,8 @@ services:
       LOG_APPS_BEACON: ""      
       
       user: $user
-      default_pwd: $default_pwd
-      public_ip: $public_ip
+      default_pwd: $APP_DEFAULT_PASSWORD
+      public_ip: $APP_PUBLIC_IP
 
     volumes:        
       # cloned repos

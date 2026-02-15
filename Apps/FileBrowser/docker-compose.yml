@@ -126,31 +126,31 @@ x-casaos:
 
         | Username | Password |
         | -------- | -------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
       zh_cn: |
         默认账号
 
         | 用户名 | 密码 |
         | -------- | -------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
       ko_kr: |
         기본 계정
 
         | 사용자명 | 비밀번호 |
         | -------- | -------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
       es_es: |
         Cuenta predeterminada
 
         | Usuario | Contraseña |
         | -------- | -------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
       fr_fr: |
         Compte par défaut
 
         | Nom d'utilisateur | Mot de passe |
         | -------- | -------- |
-        | `admin`  | `$PCS_DEFAULT_PASSWORD` |
+        | `admin`  | `$APP_DEFAULT_PASSWORD` |
   title:
     en_us: FileBrowser
   index: /
@@ -160,5 +160,5 @@ x-casaos:
     mkdir -p /DATA/AppData/filebrowser/db /DATA/AppData/filebrowser/config &&
     chown -R $PUID:$PGID /DATA/AppData/filebrowser &&
     docker run --rm -v /DATA/AppData/filebrowser/db:/database -v /DATA/AppData/filebrowser/config:/config filebrowser/filebrowser:v2.44.0 config init --database /database/filebrowser.db --config /config/settings.json &&
-    docker run --rm -v /DATA/AppData/filebrowser/db:/database -v /DATA/AppData/filebrowser/config:/config filebrowser/filebrowser:v2.44.0 users add admin $PCS_DEFAULT_PASSWORD --perm.admin --database /database/filebrowser.db
+    docker run --rm -v /DATA/AppData/filebrowser/db:/database -v /DATA/AppData/filebrowser/config:/config filebrowser/filebrowser:v2.44.0 users add admin $APP_DEFAULT_PASSWORD --perm.admin --database /database/filebrowser.db
   webui_port: 80
