@@ -8,11 +8,11 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: odoo
       POSTGRES_PASSWORD: $APP_DEFAULT_PASSWORD
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/data/pgdata/
       PUID: "0"
       PGID: "0"
     volumes:
-      - /DATA/AppData/$AppID/postgres-data:/var/lib/postgresql/data
+      - /DATA/AppData/$AppID/postgres-data/:/var/lib/postgresql/data/
     cpu_shares: 50
     deploy:
       resources:
@@ -28,12 +28,22 @@ services:
   odoo:
     image: odoo:18.0
     user: "0:0"
-    command: odoo --http-port=80
+    command: >-
+      odoo
+      --http-port=80
+      --smtp=smtp
+      --smtp-port=587
+      --smtp-user=casaos
+      --smtp-password=${APP_DEFAULT_PASSWORD}
+      --email-from=odoo@${APP_DOMAIN}
     depends_on:
       postgres:
         condition: service_healthy
     expose:
       - 80
+    labels:
+      - "caddy=odoo-${APP_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams 80}}"
     environment:
       HOST: postgres
       USER: odoo
@@ -42,15 +52,22 @@ services:
       PGID: "0"
       TZ: $TZ
     volumes:
-      - /DATA/AppData/$AppID/odoo-data:/var/lib/odoo
-      - /DATA/AppData/$AppID/config:/etc/odoo
-      - /DATA/AppData/$AppID/addons:/mnt/extra-addons
+      - /DATA/AppData/$AppID/odoo-data/:/var/lib/odoo/
+      - /DATA/AppData/$AppID/config/:/etc/odoo/
+      - /DATA/AppData/$AppID/addons/:/mnt/extra-addons/
     cpu_shares: 70
     deploy:
       resources:
         limits:
           memory: 1G
+    networks:
+      - pcs
     restart: unless-stopped
+
+networks:
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
   architectures:
@@ -61,12 +78,12 @@ x-casaos:
   category: Business
   author: CasaOS Team
   developer: Odoo S.A.
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Odoo/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Odoo/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Odoo/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Odoo/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Odoo/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Odoo/screenshot-1.png
   title:
     en_us: Odoo
     ko_kr: 오두
@@ -82,24 +99,39 @@ x-casaos:
   description:
     en_us: |
       Odoo is a suite of open source business apps that cover all your company needs: CRM, eCommerce, accounting, inventory, point of sale, project management, and more.
-      
+
       Odoo's unique value proposition is to be at the same time very easy to use and fully integrated.
+
+      **📧 Email Integration:**
+      This version uses Yundera's built-in SMTP service for email delivery - invoices, notifications, and customer communications work automatically!
     ko_kr: |
       Odoo는 CRM, 전자상거래, 회계, 재고 관리, POS, 프로젝트 관리 등 회사의 모든 비즈니스 요구사항을 충족하는 오픈 소스 비즈니스 앱 모음입니다.
-      
+
       Odoo의 고유한 가치는 사용이 매우 쉬우면서도 완전히 통합되어 있다는 점입니다.
+
+      **📧 이메일 통합:**
+      이 버전은 Yundera의 내장 SMTP 서비스를 사용합니다 - 송장, 알림, 고객 커뮤니케이션이 자동으로 작동합니다!
     zh_cn: |
       Odoo 是一套开源业务应用程序,涵盖公司的所有需求:CRM、电子商务、会计、库存、销售点、项目管理等。
-      
+
       Odoo 的独特价值主张是同时非常易于使用且完全集成。
+
+      **📧 邮件集成：**
+      此版本使用Yundera内置的SMTP服务 - 发票、通知和客户沟通自动运行！
     es_es: |
       Odoo es un conjunto de aplicaciones empresariales de código abierto que cubren todas las necesidades de su empresa: CRM, comercio electrónico, contabilidad, inventario, punto de venta, gestión de proyectos y más.
-      
+
       La propuesta de valor única de Odoo es ser al mismo tiempo muy fácil de usar y totalmente integrado.
+
+      **📧 Integración de Email:**
+      Esta versión utiliza el servicio SMTP integrado de Yundera - ¡facturas, notificaciones y comunicaciones con clientes funcionan automáticamente!
     fr_fr: |
       Odoo est une suite d'applications commerciales open source qui couvrent tous les besoins de votre entreprise : CRM, commerce électronique, comptabilité, inventaire, point de vente, gestion de projet et plus encore.
-      
+
       La proposition de valeur unique d'Odoo est d'être à la fois très facile à utiliser et entièrement intégré.
+
+      **📧 Intégration Email :**
+      Cette version utilise le service SMTP intégré de Yundera - factures, notifications et communications clients fonctionnent automatiquement !
   tips:
     before_install:
       en_us: |
