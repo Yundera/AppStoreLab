@@ -1,0 +1,250 @@
+name: teamspeak
+
+services:
+  ts3server:
+    image: teamspeak:3.13.7
+    container_name: ts3server
+    restart: unless-stopped
+    cpu_shares: 50
+    network_mode: host
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    entrypoint: ["sh", "-c", "echo '0.0.0.0/0' > /var/ts3server/query_ip_allowlist.txt && exec /opt/ts3server/entrypoint.sh ts3server serveradmin_password=$APP_DEFAULT_PASSWORD"]
+    environment:
+      TS3SERVER_LICENSE: accept
+      TS3SERVER_DB_PLUGIN: ts3db_sqlite3
+      TS3SERVER_DB_SQLCREATEPATH: create_sqlite
+      TS3SERVER_QUERY_PROTOCOLS: raw,ssh
+    tmpfs:
+      - /var/run/ts3server/:uid=1000,gid=1000
+    volumes:
+      - /DATA/AppData/teamspeak/data/:/var/ts3server/
+
+  ts3-manager:
+    image: joni1802/ts3-manager
+    restart: unless-stopped
+    cpu_shares: 30
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    expose:
+      - 80
+    labels:
+      - "caddy=teamspeak-${APP_DOMAIN}"
+      - "caddy.reverse_proxy={{upstreams 80}}"
+    environment:
+      PORT: 80
+      WHITELIST: ts3server
+      JWT_SECRET: $APP_DEFAULT_PASSWORD
+    extra_hosts:
+      - "ts3server:host-gateway"
+    depends_on:
+      - ts3server
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+  main: ts3-manager
+  author: kriz_cold
+  category: Communication
+  description:
+    en_us: |
+      **What is TeamSpeak?**
+
+      **TeamSpeak** is a professional voice communication application designed for crystal-clear, low-latency voice chat. Originally built for gaming, it's now used by businesses, education, and communities worldwide for reliable real-time communication.
+
+      **Key Features:**
+      - Crystal-clear voice quality with minimal latency
+      - Powerful permission system with channels and groups
+      - File transfer between users and channels
+      - Server and channel chat alongside voice
+      - Customizable with plugins and themes
+      - Encrypted communication (AES-256)
+
+      **Why choose TeamSpeak?**
+
+      - **Self-hosted** --- your conversations stay on your server
+      - **Low latency** --- faster than most alternatives
+      - **Lightweight** --- minimal server resources needed
+      - **Scalable** --- supports hundreds of concurrent users
+      - **No ads, no tracking** --- your privacy is respected
+
+      **Web Management:**
+
+      This app includes **TS3 Manager**, a web-based admin panel for managing your TeamSpeak server --- channels, users, permissions, and more --- all from your browser.
+    fr_fr: |
+      **Qu'est-ce que TeamSpeak ?**
+
+      **TeamSpeak** est une application de communication vocale professionnelle pour des conversations claires et a faible latence. Utilise par les joueurs, les entreprises et les communautes du monde entier.
+
+      **Fonctionnalites principales :**
+      - Qualite vocale cristalline avec latence minimale
+      - Systeme de permissions puissant avec canaux et groupes
+      - Transfert de fichiers entre utilisateurs et canaux
+      - Chat textuel en plus de la voix
+      - Personnalisable avec des plugins et themes
+      - Communication chiffree (AES-256)
+
+      **Gestion Web :**
+
+      Cette application inclut **TS3 Manager**, un panneau d'administration web pour gerer votre serveur TeamSpeak --- canaux, utilisateurs, permissions, et plus --- directement depuis votre navigateur.
+    ko_kr: |
+      **TeamSpeak란?**
+
+      **TeamSpeak**는 깨끗하고 낮은 지연 시간의 음성 채팅을 위한 전문 음성 통신 애플리케이션입니다. 게이머, 기업, 커뮤니티에서 전 세계적으로 사용됩니다.
+
+      **주요 기능:**
+      - 최소 지연 시간의 맑은 음성 품질
+      - 채널 및 그룹을 통한 강력한 권한 시스템
+      - 사용자 및 채널 간 파일 전송
+      - 음성과 함께 텍스트 채팅
+      - 플러그인 및 테마로 커스터마이즈 가능
+      - 암호화된 통신 (AES-256)
+
+      **웹 관리:**
+
+      이 앱에는 **TS3 Manager**가 포함되어 있어 브라우저에서 직접 TeamSpeak 서버를 관리할 수 있습니다 --- 채널, 사용자, 권한 등.
+    zh_cn: |
+      **什么是TeamSpeak？**
+
+      **TeamSpeak** 是一款专业的语音通信应用，提供清晰、低延迟的语音聊天。被全球游戏玩家、企业和社区广泛使用。
+
+      **核心功能：**
+      - 极低延迟的清晰语音质量
+      - 强大的频道和群组权限系统
+      - 用户和频道间的文件传输
+      - 语音之外的文字聊天
+      - 可通过插件和主题自定义
+      - 加密通信 (AES-256)
+
+      **网页管理：**
+
+      此应用包含 **TS3 Manager**，一个基于网页的管理面板，可直接在浏览器中管理您的TeamSpeak服务器 --- 频道、用户、权限等。
+    es_es: |
+      **Que es TeamSpeak?**
+
+      **TeamSpeak** es una aplicacion de comunicacion de voz profesional para chat de voz claro y de baja latencia. Utilizada por jugadores, empresas y comunidades en todo el mundo.
+
+      **Caracteristicas principales:**
+      - Calidad de voz cristalina con latencia minima
+      - Potente sistema de permisos con canales y grupos
+      - Transferencia de archivos entre usuarios y canales
+      - Chat de texto junto con voz
+      - Personalizable con plugins y temas
+      - Comunicacion cifrada (AES-256)
+
+      **Gestion Web:**
+
+      Esta aplicacion incluye **TS3 Manager**, un panel de administracion web para gestionar tu servidor TeamSpeak --- canales, usuarios, permisos, y mas --- todo desde tu navegador.
+    de_de: |
+      **Was ist TeamSpeak?**
+
+      **TeamSpeak** ist eine professionelle Sprachkommunikationsanwendung fuer kristallklare Sprachqualitaet mit minimaler Latenz. Weltweit von Gamern, Unternehmen und Communities genutzt.
+
+      **Hauptfunktionen:**
+      - Kristallklare Sprachqualitaet mit minimaler Latenz
+      - Leistungsstarkes Berechtigungssystem mit Kanaelen und Gruppen
+      - Dateiuebertragung zwischen Benutzern und Kanaelen
+      - Text-Chat neben Sprache
+      - Anpassbar mit Plugins und Themes
+      - Verschluesselte Kommunikation (AES-256)
+
+      **Web-Verwaltung:**
+
+      Diese App beinhaltet **TS3 Manager**, ein webbasiertes Admin-Panel zur Verwaltung Ihres TeamSpeak-Servers --- Kanaele, Benutzer, Berechtigungen und mehr --- direkt aus Ihrem Browser.
+  developer: TeamSpeak Systems GmbH
+  icon: https://cdn.jsdelivr.net/gh/krizcold/AppStore@main/Apps/TeamSpeak/icon.png
+  #screenshot_link:
+  #  - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TeamSpeak/screenshot-1.png
+  #  - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TeamSpeak/screenshot-2.png
+  #  - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TeamSpeak/screenshot-3.png
+  #thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/TeamSpeak/screenshot-1.png
+  tagline:
+    en_us: Professional voice communication server
+    fr_fr: Serveur de communication vocale professionnel
+    ko_kr: 전문 음성 통신 서버
+    zh_cn: 专业语音通信服务器
+    es_es: Servidor de comunicacion de voz profesional
+    de_de: Professioneller Sprachkommunikationsserver
+  title:
+    en_us: TeamSpeak
+  tips:
+    before_install:
+      en_us: |
+        **Web Admin Login:**
+
+        | Field | Value |
+        |-------|-------|
+        | Server | `ts3server` |
+        | Port | `10022` |
+        | Name | `serveradmin` |
+        | Password | `$APP_DEFAULT_PASSWORD` |
+
+        **Voice Client:** Connect with the TeamSpeak app to `$APP_PUBLIC_IP`
+      fr_fr: |
+        **Connexion Admin Web :**
+
+        | Champ | Valeur |
+        |-------|--------|
+        | Server | `ts3server` |
+        | Port | `10022` |
+        | Name | `serveradmin` |
+        | Password | `$APP_DEFAULT_PASSWORD` |
+
+        **Client vocal :** Connectez-vous avec l'application TeamSpeak a `$APP_PUBLIC_IP`
+      ko_kr: |
+        **웹 관리자 로그인:**
+
+        | 필드 | 값 |
+        |------|-----|
+        | Server | `ts3server` |
+        | Port | `10022` |
+        | Name | `serveradmin` |
+        | Password | `$APP_DEFAULT_PASSWORD` |
+
+        **음성 클라이언트:** TeamSpeak 앱으로 `$APP_PUBLIC_IP`에 연결
+      zh_cn: |
+        **网页管理登录：**
+
+        | 字段 | 值 |
+        |------|-----|
+        | Server | `ts3server` |
+        | Port | `10022` |
+        | Name | `serveradmin` |
+        | Password | `$APP_DEFAULT_PASSWORD` |
+
+        **语音客户端：** 使用TeamSpeak应用连接到 `$APP_PUBLIC_IP`
+      es_es: |
+        **Inicio de sesion admin web:**
+
+        | Campo | Valor |
+        |-------|-------|
+        | Server | `ts3server` |
+        | Port | `10022` |
+        | Name | `serveradmin` |
+        | Password | `$APP_DEFAULT_PASSWORD` |
+
+        **Cliente de voz:** Conectate con la aplicacion TeamSpeak a `$APP_PUBLIC_IP`
+      de_de: |
+        **Web-Admin-Login:**
+
+        | Feld | Wert |
+        |------|------|
+        | Server | `ts3server` |
+        | Port | `10022` |
+        | Name | `serveradmin` |
+        | Password | `$APP_DEFAULT_PASSWORD` |
+
+        **Sprach-Client:** Verbinden Sie sich mit der TeamSpeak-App zu `$APP_PUBLIC_IP`
+  index: /
+  webui_port: 80
