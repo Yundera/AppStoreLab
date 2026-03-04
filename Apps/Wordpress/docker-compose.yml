@@ -6,6 +6,17 @@ services:
     container_name: wordpress_app
     restart: unless-stopped
     user: 0:0
+    labels:
+      caddy_0: wordpress-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: wordpress-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: wordpress-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    networks:
+      - pcs
     expose:
       - 80                              # Web UI port for NSL router
     volumes:
@@ -71,6 +82,11 @@ services:
         limits:
           memory: 1G                    # Memory limit for database
     cpu_shares: 50
+
+networks:
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
   architectures:

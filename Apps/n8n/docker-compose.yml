@@ -6,6 +6,15 @@ services:
     container_name: n8n
     restart: unless-stopped
     user: "1000:1000"
+    labels:
+      caddy_0: n8n-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: n8n-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: n8n-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     networks:
       - pcs
     expose:

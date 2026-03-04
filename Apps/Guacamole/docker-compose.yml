@@ -7,7 +7,7 @@ services:
     cpu_shares: 70
     environment:
       GUACD_HOSTNAME: guacd
-      POSTGRESQL_HOSTNAME: postgres
+      POSTGRESQL_HOSTNAME: guacamole-postgres
       POSTGRESQL_DATABASE: guacamole_db
       POSTGRESQL_USER: guacamole_user
       POSTGRESQL_PASSWORD: '$APP_DEFAULT_PASSWORD'
@@ -16,12 +16,26 @@ services:
       - postgres
     expose:
       - 8080
+    labels:
+      caddy_0: guacamole-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8080}}"
+      caddy_1: guacamole-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8080}}"
+      caddy_2: guacamole-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8080}}"
+    networks:
+      - pcs
+      - guacamole
 
   guacd:
     image: guacamole/guacd:1.5.5
     restart: unless-stopped
     user: 0:0
     cpu_shares: 70
+    networks:
+      - guacamole
 
   postgres:
     user: $PUID:$PGID
@@ -36,6 +50,16 @@ services:
       - /DATA/AppData/guacamole/postgresql:/var/lib/postgresql/data
       - /DATA/AppData/guacamole/init:/init
     command: /init/init-db.sh
+    container_name: guacamole-postgres
+    networks:
+      - guacamole
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+  guacamole:
+    name: guacamole
 
 x-casaos:
   architectures:

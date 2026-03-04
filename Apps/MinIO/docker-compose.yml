@@ -11,7 +11,6 @@ services:
       MINIO_ROOT_PASSWORD: $APP_DEFAULT_PASSWORD
       MINIO_BROWSER_REDIRECT_URL: https://9001-minio-$DOMAIN
     image: quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z
-    network_mode: bridge
     restart: unless-stopped
     command: server /data --console-address ":9001"
     volumes:
@@ -28,6 +27,22 @@ services:
         limits:
           memory: 512M
           cpus: '0.5'
+    labels:
+      caddy_0: minio-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 9001}}"
+      caddy_1: minio-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 9001}}"
+      caddy_2: minio-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 9001}}"
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
 x-casaos:
   architectures:
     - amd64

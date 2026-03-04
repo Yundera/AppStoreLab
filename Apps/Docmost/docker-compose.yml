@@ -61,8 +61,14 @@ services:
     expose:
       - "80"
     labels:
-      - "caddy=docmost-${APP_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams 80}}"
+      caddy_0: docmost-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: docmost-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: docmost-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     volumes:
       - /DATA/AppData/$AppID/storage/:/app/data/storage
     environment:
@@ -87,6 +93,7 @@ networks:
   docmost-network:
     driver: bridge
   pcs:
+    name: pcs
     external: true
 
 x-casaos:

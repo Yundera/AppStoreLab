@@ -3,10 +3,9 @@ services:
   formbricks:
     image: formbricks/formbricks:latest
     restart: unless-stopped
-    network_mode: bridge
     environment:
       # Database
-      DATABASE_URL: 'postgresql://postgres:$APP_DEFAULT_PASSWORD@postgres:5432/formbricks'
+      DATABASE_URL: 'postgresql://postgres:$APP_DEFAULT_PASSWORD@formbricks-postgres:5432/formbricks'
       # Next Auth
       NEXTAUTH_URL: 'https://$DOMAIN'
       NEXTAUTH_SECRET: '$APP_DEFAULT_PASSWORD'
@@ -41,6 +40,18 @@ services:
     depends_on:
       - postgres
     container_name: formbricks
+    labels:
+      caddy_0: formbricks-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 3000}}"
+      caddy_1: formbricks-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 3000}}"
+      caddy_2: formbricks-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 3000}}"
+    networks:
+      - pcs
+      - formbricks
 
   postgres:
     image: postgres:15-alpine
@@ -54,6 +65,15 @@ services:
         source: /DATA/AppData/$AppID/postgresql
         target: /var/lib/postgresql/data
     container_name: formbricks-postgres
+    networks:
+      - formbricks
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+  formbricks:
+    name: formbricks
 
 x-casaos:
   architectures:

@@ -5,11 +5,17 @@ services:
     image: ghcr.io/yundera/nginx-hash-lock:latest
     container_name: yunderadevkit
     restart: unless-stopped
+    labels:
+      caddy_0: yunderadevkit-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: yunderadevkit-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: yunderadevkit-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     expose:
       - "80"
-    labels:
-      - "caddy=yunderadevkit-${APP_DOMAIN}"
-      - "caddy.reverse_proxy={{upstreams 80}}"
     user: "root"
     environment:
       AUTH_HASH: $AUTH_HASH
@@ -142,6 +148,7 @@ services:
 # Define the network as external, since it's created by the main NSL stack
 networks:
   pcs:
+    name: pcs
     external: true
 
 x-casaos:

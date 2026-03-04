@@ -40,18 +40,18 @@ services:
       MOODLE_DB_USER: "moodle_user"
       MOODLE_DB_PASSWORD: ${APP_DEFAULT_PASSWORD}
       MOODLE_DB_NAME: "moodle"
-      
+
       # Admin configuration
       MOODLE_ADMIN: "admin"
       MOODLE_ADMIN_PASSWORD: ${APP_DEFAULT_PASSWORD}
       MOODLE_ADMIN_EMAIL: "admin@example.com"
-      
+
       # CRITICAL: URL and reverse proxy configuration
       # NSL router provides HTTPS at https://moodle-{username}.nsl.sh
       MOODLE_URL: "https://moodle-${APP_DOMAIN}"
       MOODLE_REVERSE_LB: "false"  # Not behind traditional load balancer
       MOODLE_SSL: "true"  # HTTPS enabled by NSL router
-      
+
       # System
       TZ: ${TZ}
     volumes:
@@ -65,8 +65,18 @@ services:
           memory: 1024M
           cpus: '1.0'
     restart: unless-stopped
+    labels:
+      caddy_0: moodle-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: moodle-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: moodle-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
     networks:
       - moodle-network
+      - pcs
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
       interval: 30s
@@ -83,6 +93,9 @@ volumes:
 networks:
   moodle-network:
     driver: bridge
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
   architectures:

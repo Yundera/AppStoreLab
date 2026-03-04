@@ -88,6 +88,18 @@ services:
         condition: service_healthy
     expose:
       - "80"
+    labels:
+      caddy_0: plausible-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: plausible-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: plausible-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    networks:
+      - pcs
+      - plausible-network
     volumes:
       - /DATA/AppData/$AppID/secrets:/secrets
     environment:
@@ -101,13 +113,14 @@ services:
       resources:
         reservations:
           memory: 512M
-    networks:
-      - plausible-network
     cpu_shares: 70
 
 networks:
   plausible-network:
     driver: bridge
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
   architectures:

@@ -6,6 +6,17 @@ services:
     image: lscr.io/linuxserver/qbittorrent:5.1.4
     container_name: qbittorrent
     restart: unless-stopped
+    labels:
+      caddy_0: qbittorrent-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: qbittorrent-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: qbittorrent-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    networks:
+      - pcs
     expose:
       - 80
     # Uncomment the ports section if you want to expose the service on specific ports
@@ -24,6 +35,11 @@ services:
       resources:
         limits:
           memory: 512M
+
+networks:
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
   main: qbittorrent

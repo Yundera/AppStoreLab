@@ -6,16 +6,29 @@ services:
     container_name: psitransfer
     user: 0:0
     restart: unless-stopped
-    
+
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: '0.5'
-    
+
     expose:
       - 80
-    
+
+    labels:
+      caddy_0: psitransfer-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: psitransfer-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: psitransfer-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+
+    networks:
+      - pcs
+
     environment:
       - PUID=0
       - PGID=0
@@ -37,6 +50,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s  # 앱 시작 대기 시간 증가
+
+networks:
+  pcs:
+    name: pcs
+    external: true
 
 x-casaos:
   architectures:

@@ -8,6 +8,17 @@ services:
     restart: unless-stopped
     expose:
       - 80
+    labels:
+      caddy_0: rclone-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: rclone-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: rclone-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    networks:
+      - pcs
     volumes:
       - /DATA/AppData/rclone/config/:/config/rclone/
       - /DATA/AppData/rclone/cache/:/cache/
@@ -37,6 +48,12 @@ services:
       - /config/rclone/rclone.conf
       - --cache-dir
       - /cache
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
 x-casaos:
   architectures:
     - amd64

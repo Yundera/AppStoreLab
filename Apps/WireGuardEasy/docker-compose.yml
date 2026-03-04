@@ -3,7 +3,17 @@ services:
   wgeasy:
     image: ghcr.io/wg-easy/wg-easy:13
     restart: unless-stopped
-    network_mode: bridge
+    labels:
+      caddy_0: wgeasy-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 51821}}"
+      caddy_1: wgeasy-${PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 51821}}"
+      caddy_2: wgeasy-${PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 51821}}"
+    networks:
+      - pcs
     environment:
       PASSWORD: '$APP_DEFAULT_PASSWORD'
       WG_HOST: '$APP_PUBLIC_IP'
@@ -35,6 +45,12 @@ services:
       - net.ipv4.ip_forward=1
       - net.ipv4.conf.all.src_valid_mark=1
     container_name: wgeasy
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
 x-casaos:
   architectures:
     - amd64
