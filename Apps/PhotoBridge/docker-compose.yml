@@ -1,0 +1,191 @@
+name: photobridge
+
+services:
+  photobridge:
+    image: ghcr.io/bookjjun-ij/photobridge:0.2.8
+    container_name: photobridge
+    restart: unless-stopped
+    user: "0:0"
+    networks:
+      - pcs
+    expose:
+      - "80"
+    labels:
+      caddy_0: photobridge-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.request_body.max_size: 10G
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: photobridge-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.request_body.max_size: 10G
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: photobridge-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.request_body.max_size: 10G
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    volumes:
+      - /DATA/Gallery/Import:/import
+    environment:
+      TZ: $TZ
+      IMMICH_URL: http://immich:80
+      IMPORT_PATH: /import
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    cpu_shares: 50
+
+networks:
+  pcs:
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: photobridge
+  webui_port: 80
+  author: Yundera Team
+  category: Utilities
+  developer: Yundera
+  store_app_id: photobridge
+  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-1.png
+  description:
+    en_us: |
+      **PhotoBridge for Immich — Google Photos & iCloud Importer**
+
+      Import your Google Photos or iCloud Photos archive directly into your Yundera server. PhotoBridge wraps the immich-go tool with a simple web interface that handles validation, configuration, and real-time progress tracking.
+
+      **Key Features:**
+      - Google Photos Takeout ZIP import (no extraction needed)
+      - iCloud Photos export import
+      - Export validation before importing
+      - Album and metadata preservation (dates, locations, descriptions)
+      - Dry-run mode to preview before importing
+      - Real-time import progress logs
+      - Automatic duplicate detection
+
+      **How to use:**
+      1. Export your photos from Google Takeout or iCloud
+      2. Upload ZIP files to /DATA/Gallery/Import/ via Files app
+      3. Open PhotoBridge and enter your Immich API key
+      4. Select files, validate, and start import
+    ko_kr: |
+      **PhotoBridge for Immich — Google Photos & iCloud 가져오기 도구**
+
+      Google Photos 또는 iCloud Photos 아카이브를 Yundera 서버의 Immich로 직접 가져옵니다. PhotoBridge는 immich-go 도구를 간단한 웹 인터페이스로 감싸 검증, 설정, 실시간 진행 추적을 제공합니다.
+
+      **주요 기능:**
+      - Google Photos Takeout ZIP 가져오기 (압축 해제 불필요)
+      - iCloud Photos 내보내기 가져오기
+      - 가져오기 전 내보내기 검증
+      - 앨범 및 메타데이터 보존 (날짜, 위치, 설명)
+      - 드라이런 모드로 미리보기
+      - 실시간 가져오기 진행 로그
+      - 자동 중복 감지
+
+      **사용 방법:**
+      1. Google Takeout 또는 iCloud에서 사진을 내보내기
+      2. Files 앱을 통해 /DATA/Gallery/Import/에 ZIP 파일 업로드
+      3. PhotoBridge를 열고 Immich API 키 입력
+      4. 파일 선택, 검증 후 가져오기 시작
+    zh_cn: |
+      **PhotoBridge for Immich — Google Photos 和 iCloud 导入工具**
+
+      将您的 Google Photos 或 iCloud Photos 存档直接导入到 Yundera 服务器上的 Immich。PhotoBridge 将 immich-go 工具封装在简单的网页界面中，提供验证、配置和实时进度跟踪功能。
+
+      **主要功能：**
+      - Google Photos Takeout ZIP 导入（无需解压）
+      - iCloud Photos 导出导入
+      - 导入前导出验证
+      - 相册和元数据保留（日期、位置、描述）
+      - 试运行模式预览
+      - 实时导入进度日志
+      - 自动重复检测
+
+      **使用方法：**
+      1. 从 Google Takeout 或 iCloud 导出照片
+      2. 通过 Files 应用将 ZIP 文件上传到 /DATA/Gallery/Import/
+      3. 打开 PhotoBridge 并输入 Immich API 密钥
+      4. 选择文件、验证并开始导入
+    fr_fr: |
+      **PhotoBridge for Immich — Importateur Google Photos et iCloud**
+
+      Importez vos archives Google Photos ou iCloud Photos directement dans Immich sur votre serveur Yundera. PhotoBridge encapsule l'outil immich-go avec une interface web simple pour la validation, la configuration et le suivi en temps réel.
+
+      **Fonctionnalites principales :**
+      - Import de ZIP Google Photos Takeout (pas d'extraction necessaire)
+      - Import d'export iCloud Photos
+      - Validation de l'export avant import
+      - Preservation des albums et metadonnees (dates, lieux, descriptions)
+      - Mode simulation pour previsualiser
+      - Logs de progression en temps reel
+      - Detection automatique des doublons
+
+      **Comment utiliser :**
+      1. Exportez vos photos depuis Google Takeout ou iCloud
+      2. Uploadez les fichiers ZIP dans /DATA/Gallery/Import/ via l'app Fichiers
+      3. Ouvrez PhotoBridge et entrez votre cle API Immich
+      4. Selectionnez les fichiers, validez et lancez l'import
+    es_es: |
+      **PhotoBridge for Immich — Importador de Google Photos e iCloud**
+
+      Importe su archivo de Google Photos o iCloud Photos directamente a Immich en su servidor Yundera. PhotoBridge envuelve la herramienta immich-go con una interfaz web simple para validacion, configuracion y seguimiento en tiempo real.
+
+      **Caracteristicas principales:**
+      - Importacion de ZIP de Google Photos Takeout (sin necesidad de extraer)
+      - Importacion de exportacion de iCloud Photos
+      - Validacion de exportacion antes de importar
+      - Preservacion de albumes y metadatos (fechas, ubicaciones, descripciones)
+      - Modo de prueba para previsualizar
+      - Registros de progreso en tiempo real
+      - Deteccion automatica de duplicados
+
+      **Como usar:**
+      1. Exporte sus fotos desde Google Takeout o iCloud
+      2. Suba los archivos ZIP a /DATA/Gallery/Import/ a traves de la app Archivos
+      3. Abra PhotoBridge e ingrese su clave API de Immich
+      4. Seleccione archivos, valide e inicie la importacion
+  tagline:
+    en_us: Import Google Photos & iCloud archives into Immich
+    ko_kr: Google Photos 및 iCloud 아카이브를 Immich로 가져오기
+    zh_cn: 将 Google Photos 和 iCloud 存档导入 Immich
+    fr_fr: Importez vos archives Google Photos et iCloud dans Immich
+    es_es: Importe archivos de Google Photos e iCloud a Immich
+  title:
+    en_us: PhotoBridge
+  tips:
+    before_install:
+      en_us: |
+        **Before you start:**
+
+        1. Make sure **Immich** is installed and running on your PCS
+        2. Generate an API key in Immich (Account Settings -> API Keys)
+        3. Export your photos:
+           - **Google Photos:** [Google Takeout](https://takeout.google.com/) -> Select only Google Photos -> Download as ZIP
+           - **iCloud:** [icloud.com](https://www.icloud.com/) -> Photos -> Select All -> Download
+        4. Upload the ZIP files to `/DATA/Gallery/Import/` using the **Files** app
+
+        PhotoBridge will validate your export and upload everything to Immich with preserved albums and metadata.
+      ko_kr: |
+        **시작하기 전:**
+
+        1. PCS에 **Immich**가 설치되어 실행 중인지 확인하세요
+        2. Immich에서 API 키를 생성하세요 (계정 설정 -> API 키)
+        3. 사진을 내보내세요:
+           - **Google Photos:** [Google Takeout](https://takeout.google.com/) -> Google Photos만 선택 -> ZIP으로 다운로드
+           - **iCloud:** [icloud.com](https://www.icloud.com/) -> 사진 -> 전체 선택 -> 다운로드
+        4. **Files** 앱을 사용하여 `/DATA/Gallery/Import/`에 ZIP 파일을 업로드하세요
+
+        PhotoBridge가 내보내기를 검증하고 앨범과 메타데이터를 보존하며 모든 것을 Immich에 업로드합니다.
+  index: /
