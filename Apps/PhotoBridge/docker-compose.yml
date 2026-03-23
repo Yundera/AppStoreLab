@@ -2,7 +2,7 @@ name: photobridge
 
 services:
   photobridge:
-    image: ghcr.io/bookjjun-ij/photobridge:0.2.8
+    image: ghcr.io/bookjjun-ij/photobridge:0.1.0
     container_name: photobridge
     restart: unless-stopped
     user: "0:0"
@@ -54,12 +54,12 @@ x-casaos:
   category: Utilities
   developer: Yundera
   store_app_id: photobridge
-  icon: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/PhotoBridge/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/BookJJun-IJ/AppStore@create/Apps/PhotoBridge/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/PhotoBridge/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/PhotoBridge/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/PhotoBridge/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/PhotoBridge/screenshot-1.png
   description:
     en_us: |
       **PhotoBridge for Immich — Google Photos & iCloud Importer**
