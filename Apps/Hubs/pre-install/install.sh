@@ -1,10 +1,11 @@
 #!/bin/bash
 # Bootstraps secrets and config for the Hubs stack.
-# Idempotent: re-running is a no-op once secrets.env exists.
+# Idempotent: re-running is a no-op once the .env file exists.
 set -euo pipefail
 
 APP_DIR="/DATA/AppData/hubs"
-SECRETS_FILE="$APP_DIR/secrets.env"
+COMPOSE_DIR="/DATA/AppData/casaos/apps/hubs"
+ENV_FILE="$COMPOSE_DIR/.env"
 PERMS_PRIV="$APP_DIR/perms.key.pem"
 PERMS_PUB="$APP_DIR/perms.pub.pem"
 TEMPLATE_DST="$APP_DIR/config.toml.template"
@@ -13,14 +14,14 @@ TEMPLATE_SRC_URL="https://raw.githubusercontent.com/Yundera/AppStoreLab/main/App
 PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 
-mkdir -p "$APP_DIR" "$APP_DIR/pgdata" "$APP_DIR/retstorage"
+mkdir -p "$APP_DIR" "$APP_DIR/pgdata" "$APP_DIR/retstorage" "$COMPOSE_DIR"
 # Postgres image runs as uid 70 (alpine) and must own its data dir.
 chown 70:70 "$APP_DIR/pgdata" || true
 
 # Always refresh the Reticulum config template so updates ship via the AppStore.
 wget -qO "$TEMPLATE_DST" "$TEMPLATE_SRC_URL"
 
-if [ -s "$SECRETS_FILE" ] && [ -s "$PERMS_PRIV" ] && [ -s "$PERMS_PUB" ]; then
+if [ -s "$ENV_FILE" ] && [ -s "$PERMS_PRIV" ] && [ -s "$PERMS_PUB" ]; then
   echo "Hubs secrets already provisioned; skipping generation."
   exit 0
 fi
@@ -57,10 +58,10 @@ DASHBOARD_ACCESS_KEY=$(rand 24)
 POSTGREST_PASSWORD=$(rand 24)
 
 DB_USER="postgres"
-DB_PASS="${APP_DEFAULT_PASSWORD:-$(rand 24)}"
+DB_PASS=$(rand 24)
 DB_NAME="ret_production"
 
-cat > "$SECRETS_FILE" <<EOF
+cat > "$ENV_FILE" <<EOF
 POSTGRES_USER=$DB_USER
 POSTGRES_PASSWORD=$DB_PASS
 POSTGRES_DB=$DB_NAME
@@ -77,8 +78,8 @@ turkeyCfg_POSTGREST_PASSWORD=$POSTGREST_PASSWORD
 turkeyCfg_PERMS_KEY=$PERMS_KEY_ESCAPED
 EOF
 
-chmod 600 "$SECRETS_FILE" "$PERMS_PRIV"
-chown "$PUID:$PGID" "$SECRETS_FILE" "$PERMS_PRIV" "$PERMS_PUB" "$TEMPLATE_DST" || true
+chmod 600 "$ENV_FILE" "$PERMS_PRIV"
+chown "$PUID:$PGID" "$ENV_FILE" "$PERMS_PRIV" "$PERMS_PUB" "$TEMPLATE_DST" || true
 chown -R "$PUID:$PGID" "$APP_DIR/retstorage" || true
 
-echo "Hubs secrets written to $SECRETS_FILE"
+echo "Hubs secrets written to $ENV_FILE"

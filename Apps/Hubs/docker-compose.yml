@@ -6,9 +6,10 @@ services:
     container_name: hubs-db
     restart: unless-stopped
     cpu_shares: 70
-    env_file:
-      - /DATA/AppData/hubs/secrets.env
     environment:
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+      POSTGRES_DB: $POSTGRES_DB
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -30,8 +31,6 @@ services:
     container_name: hubs-reticulum
     restart: unless-stopped
     cpu_shares: 70
-    env_file:
-      - /DATA/AppData/hubs/secrets.env
     environment:
       POD_IP: "127.0.0.1"
       POD_NAME: "reticulum-1"
@@ -50,6 +49,15 @@ services:
       turkeyCfg_MAILER_RELAY: "smtp"
       turkeyCfg_MAILER_PORT: "587"
       turkeyCfg_MAILER_TLS: "never"
+      turkeyCfg_DB_USER: $turkeyCfg_DB_USER
+      turkeyCfg_DB_PASS: $turkeyCfg_DB_PASS
+      turkeyCfg_DB_NAME: $turkeyCfg_DB_NAME
+      turkeyCfg_NODE_COOKIE: $turkeyCfg_NODE_COOKIE
+      turkeyCfg_GUARDIAN_KEY: $turkeyCfg_GUARDIAN_KEY
+      turkeyCfg_PHX_KEY: $turkeyCfg_PHX_KEY
+      turkeyCfg_DASHBOARD_ACCESS_KEY: $turkeyCfg_DASHBOARD_ACCESS_KEY
+      turkeyCfg_POSTGREST_PASSWORD: $turkeyCfg_POSTGREST_PASSWORD
+      turkeyCfg_PERMS_KEY: $turkeyCfg_PERMS_KEY
       PUID: $PUID
       PGID: $PGID
       TZ: $TZ
@@ -88,9 +96,9 @@ services:
     container_name: hubs-postgrest
     restart: unless-stopped
     cpu_shares: 50
-    env_file:
-      - /DATA/AppData/hubs/secrets.env
     environment:
+      PGRST_DB_URI: $PGRST_DB_URI
+      PGRST_JWT_SECRET: $PGRST_JWT_SECRET
       PGRST_LOG_LEVEL: info
       PGRST_DB_SCHEMA: ret0_admin
       PGRST_DB_ANON_ROLE: postgres
@@ -297,21 +305,21 @@ x-casaos:
 
       This deployment runs the full Hubs Foundation stable stack: Reticulum (Phoenix backend), Hubs (3D client), Spoke (scene editor), Dialog (Mediasoup WebRTC SFU), Nearspark (thumbnail proxy), Photomnemonic (page screenshotter), PostgreSQL, and PostgREST.
 
-      First boot generates an RSA permissions keypair and a set of Phoenix/Guardian/PostgREST secrets in /DATA/AppData/hubs/secrets.env. The same secrets are reused on subsequent boots.
+      First boot generates an RSA permissions keypair (under /DATA/AppData/hubs/) and a set of Phoenix/Guardian/PostgREST secrets in the compose's .env file. The same secrets are reused on subsequent boots.
 
   pre-install-cmd: |
     mkdir -p /DATA/AppData/hubs/
     if [ ! -f /DATA/AppData/hubs/.initialized ]; then
       wget -qO /DATA/AppData/hubs/install.sh https://raw.githubusercontent.com/Yundera/AppStoreLab/main/Apps/Hubs/pre-install/install.sh
       chmod +x /DATA/AppData/hubs/install.sh
-      APP_DEFAULT_PASSWORD="$APP_DEFAULT_PASSWORD" PUID="$PUID" PGID="$PGID" bash /DATA/AppData/hubs/install.sh
+      PUID="$PUID" PGID="$PGID" bash /DATA/AppData/hubs/install.sh
       touch /DATA/AppData/hubs/.initialized
     fi
 
   post-install-cmd: |
     docker run --rm \
       --network hubs-net \
-      -v /DATA/AppData/hubs/secrets.env:/secrets.env:ro \
+      -v /DATA/AppData/casaos/apps/hubs/.env:/secrets.env:ro \
       -e SECRETS_ENV_FILE=/secrets.env \
       -e RET_INTERNAL_URL=https://hubs-reticulum:4000 \
       -e RET_PUBLIC_URL=https://hubs-${APP_DOMAIN} \
@@ -334,6 +342,6 @@ x-casaos:
 
         Resource footprint: ~3 GB RAM minimum, ~2 vCPU. Suitable for small rooms (<10 concurrent users).
 
-        Storage: Postgres data at /DATA/AppData/hubs/pgdata, room uploads at /DATA/AppData/hubs/retstorage, secrets at /DATA/AppData/hubs/secrets.env (chmod 600).
+        Storage: Postgres data at /DATA/AppData/hubs/pgdata, room uploads at /DATA/AppData/hubs/retstorage, secrets at /DATA/AppData/casaos/apps/hubs/.env (chmod 600).
 
         After install, sign in at https://hubs-${APP_DOMAIN} using ${APP_EMAIL}; an admin login link is mailed (or visible in Reticulum logs if SMTP is unconfigured).
