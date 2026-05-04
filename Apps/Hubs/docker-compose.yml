@@ -5,6 +5,7 @@ services:
     image: postgres:14-alpine
     container_name: hubs-db
     restart: unless-stopped
+    user: "0:0"
     cpu_shares: 70
     environment:
       POSTGRES_USER: $POSTGRES_USER
@@ -12,7 +13,7 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres || exit 1"]
       interval: 10s
@@ -30,6 +31,7 @@ services:
     image: hubsfoundation/reticulum:stable-855
     container_name: hubs-reticulum
     restart: unless-stopped
+    user: "0:0"
     cpu_shares: 70
     environment:
       POD_IP: "127.0.0.1"
@@ -60,7 +62,7 @@ services:
       turkeyCfg_PERMS_KEY: $turkeyCfg_PERMS_KEY
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     expose:
       - 4000
       - 4001
@@ -95,6 +97,7 @@ services:
     image: mozillareality/postgrest:8
     container_name: hubs-postgrest
     restart: unless-stopped
+    user: "0:0"
     cpu_shares: 50
     environment:
       PGRST_DB_URI: $PGRST_DB_URI
@@ -104,7 +107,7 @@ services:
       PGRST_DB_ANON_ROLE: postgres
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     expose:
       - 3000
     depends_on:
@@ -117,6 +120,7 @@ services:
     image: hubsfoundation/hubs:stable-3111
     container_name: hubs-client
     restart: unless-stopped
+    user: "0:0"
     cpu_shares: 80
     environment:
       DOMAIN: "${APP_DOMAIN}"
@@ -130,7 +134,7 @@ services:
       turkeyCfg_tier: "p1"
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     expose:
       - 8080
     networks:
@@ -154,6 +158,7 @@ services:
     image: hubsfoundation/spoke:stable-95
     container_name: hubs-spoke
     restart: unless-stopped
+    user: "0:0"
     cpu_shares: 50
     environment:
       DOMAIN: "${APP_DOMAIN}"
@@ -167,7 +172,7 @@ services:
       turkeyCfg_hubs_server: "hubs-${APP_DOMAIN}"
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     expose:
       - 8080
     networks:
@@ -191,6 +196,7 @@ services:
     image: hubsfoundation/dialog:stable-331
     container_name: hubs-dialog
     restart: unless-stopped
+    user: "0:0"
     cpu_shares: 70
     environment:
       AUTH_KEY: /app/certs/perms.pub.pem
@@ -203,7 +209,7 @@ services:
       DEBUG: "*INFO* *WARN* *ERROR*"
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     volumes:
       - /DATA/AppData/hubs/perms.pub.pem:/app/certs/perms.pub.pem:ro
     command: ["node", "index.js"]
@@ -237,7 +243,7 @@ services:
     environment:
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     expose:
       - 5000
     networks:
@@ -259,7 +265,7 @@ services:
     environment:
       PUID: $PUID
       PGID: $PGID
-      TZ: $TZ
+      TZ: UTC
     expose:
       - 5000
     networks:
