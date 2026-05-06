@@ -314,11 +314,15 @@ x-casaos:
       First boot generates an RSA permissions keypair (under /DATA/AppData/hubs/) and a set of Phoenix/Guardian/PostgREST secrets in the compose's .env file. The same secrets are reused on subsequent boots.
 
   pre-install-cmd: |
-    mkdir -p /DATA/AppData/hubs/
+    mkdir -p /DATA/AppData/hubs/pgdata /DATA/AppData/hubs/retstorage
+    # Heal pgdata ownership on every install — postgres runs as uid 70 in
+    # the alpine image, but the framework's recursive chown of /DATA/AppData
+    # can re-lock it to PUID and trigger a reticulum crashloop.
+    chown -R 70:70 /DATA/AppData/hubs/pgdata 2>/dev/null || true
     if [ ! -f /DATA/AppData/hubs/.initialized ]; then
       wget -qO /DATA/AppData/hubs/install.sh https://raw.githubusercontent.com/Yundera/AppStoreLab/main/Apps/Hubs/pre-install/install.sh
       chmod +x /DATA/AppData/hubs/install.sh
-      PUID="$PUID" PGID="$PGID" bash /DATA/AppData/hubs/install.sh
+      APP_DOMAIN="$APP_DOMAIN" APP_PUBLIC_IP_DASH="$APP_PUBLIC_IP_DASH" APP_PUBLIC_IPV4="$APP_PUBLIC_IPV4" APP_EMAIL="$APP_EMAIL" PUID="$PUID" PGID="$PGID" bash /DATA/AppData/hubs/install.sh
       touch /DATA/AppData/hubs/.initialized
     fi
 

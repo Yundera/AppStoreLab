@@ -14,9 +14,19 @@ TEMPLATE_SRC_URL="https://raw.githubusercontent.com/Yundera/AppStoreLab/main/App
 PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 
+# Framework env vars passed through from CasaOS/Yundera. These get baked into
+# .env (below) so docker compose's --env-file pass doesn't shadow them with
+# empties at deploy time — that would render Caddy labels like "hubs-.nip.io"
+# and break the CF Worker's IP-based routing.
+APP_DOMAIN="${APP_DOMAIN:-}"
+APP_PUBLIC_IP_DASH="${APP_PUBLIC_IP_DASH:-}"
+APP_PUBLIC_IPV4="${APP_PUBLIC_IPV4:-}"
+APP_EMAIL="${APP_EMAIL:-}"
+
 mkdir -p "$APP_DIR" "$APP_DIR/pgdata" "$APP_DIR/retstorage" "$COMPOSE_DIR"
 # Postgres image runs as uid 70 (alpine) and must own its data dir.
-chown 70:70 "$APP_DIR/pgdata" || true
+# Recursive + every-run so a later framework chown sweep can't relock it.
+chown -R 70:70 "$APP_DIR/pgdata" 2>/dev/null || true
 
 # Always refresh the Reticulum config template so updates ship via the AppStore.
 wget -qO "$TEMPLATE_DST" "$TEMPLATE_SRC_URL"
@@ -62,6 +72,16 @@ DB_PASS=$(rand 24)
 DB_NAME="ret_production"
 
 cat > "$ENV_FILE" <<EOF
+# Framework passthrough — must be present here because compose's --env-file
+# pass shadows shell env vars; without these the Caddy labels resolve as
+# "hubs-.nip.io" and CF Worker requests fall through to the catch-all.
+APP_DOMAIN=$APP_DOMAIN
+APP_PUBLIC_IP_DASH=$APP_PUBLIC_IP_DASH
+APP_PUBLIC_IPV4=$APP_PUBLIC_IPV4
+APP_EMAIL=$APP_EMAIL
+PUID=$PUID
+PGID=$PGID
+
 POSTGRES_USER=$DB_USER
 POSTGRES_PASSWORD=$DB_PASS
 POSTGRES_DB=$DB_NAME
