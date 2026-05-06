@@ -1,6 +1,44 @@
 name: hubs
 
 services:
+  hubs:
+    image: hubsfoundation/hubs:stable-3111
+    container_name: hubs
+    restart: unless-stopped
+    user: "0:0"
+    cpu_shares: 80
+    environment:
+      DOMAIN: "${APP_DOMAIN}"
+      SUB_DOMAIN: "hubs"
+      turkeyCfg_thumbnail_server: "hubsnearspark-${APP_DOMAIN}"
+      turkeyCfg_base_assets_path: "https://hubsassets-${APP_DOMAIN}/hubs/"
+      turkeyCfg_non_cors_proxy_domains: "hubs-${APP_DOMAIN},hubsassets-${APP_DOMAIN}"
+      turkeyCfg_reticulum_server: "hubs-${APP_DOMAIN}"
+      turkeyCfg_cors_proxy_server: "hubs-${APP_DOMAIN}"
+      turkeyCfg_shortlink_domain: "hubs-${APP_DOMAIN}"
+      turkeyCfg_tier: "p1"
+      PUID: $PUID
+      PGID: $PGID
+      TZ: UTC
+    expose:
+      - 8080
+    networks:
+      - hubs-net
+      - pcs
+    labels:
+      caddy_0: hubsassets-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "https://{{upstreams 8080}}"
+      caddy_0.reverse_proxy.transport: http
+      caddy_0.reverse_proxy.transport.tls: ""
+      caddy_0.reverse_proxy.transport.tls_insecure_skip_verify: ""
+      caddy_1: hubsassets-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "https://{{upstreams 8080}}"
+      caddy_1.reverse_proxy.transport: http
+      caddy_1.reverse_proxy.transport.tls: ""
+      caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
+      
   db:
     image: postgres:14-alpine
     container_name: hubs-db
@@ -116,45 +154,7 @@ services:
     networks:
       - hubs-net
 
-  hubs-client:
-    image: hubsfoundation/hubs:stable-3111
-    container_name: hubs-client
-    restart: unless-stopped
-    user: "0:0"
-    cpu_shares: 80
-    environment:
-      DOMAIN: "${APP_DOMAIN}"
-      SUB_DOMAIN: "hubs"
-      turkeyCfg_thumbnail_server: "hubsnearspark-${APP_DOMAIN}"
-      turkeyCfg_base_assets_path: "https://hubsassets-${APP_DOMAIN}/hubs/"
-      turkeyCfg_non_cors_proxy_domains: "hubs-${APP_DOMAIN},hubsassets-${APP_DOMAIN}"
-      turkeyCfg_reticulum_server: "hubs-${APP_DOMAIN}"
-      turkeyCfg_cors_proxy_server: "hubs-${APP_DOMAIN}"
-      turkeyCfg_shortlink_domain: "hubs-${APP_DOMAIN}"
-      turkeyCfg_tier: "p1"
-      PUID: $PUID
-      PGID: $PGID
-      TZ: UTC
-    expose:
-      - 8080
-    networks:
-      - hubs-net
-      - pcs
-    labels:
-      caddy_0: hubsassets-${APP_DOMAIN}
-      caddy_0.import: gateway_tls
-      caddy_0.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_0.reverse_proxy.transport: http
-      caddy_0.reverse_proxy.transport.tls: ""
-      caddy_0.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      caddy_1: hubsassets-${APP_PUBLIC_IP_DASH}.nip.io
-      caddy_1.import: gateway_tls
-      caddy_1.reverse_proxy: "https://{{upstreams 8080}}"
-      caddy_1.reverse_proxy.transport: http
-      caddy_1.reverse_proxy.transport.tls: ""
-      caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
-
-  spoke:
+    spoke:
     image: hubsfoundation/spoke:stable-95
     container_name: hubs-spoke
     restart: unless-stopped
@@ -281,12 +281,7 @@ networks:
 x-casaos:
   architectures:
     - amd64
-  main: reticulum
-  is_uncontrolled: false
-  webui_port: 4001
-  port_map: "4001"
-  index: "/"
-  scheme: http
+  main: hubs
 
   author: Hubs Foundation
   developer: Hubs Foundation
@@ -334,7 +329,7 @@ x-casaos:
       -e RET_INTERNAL_URL=https://hubs-reticulum:4000 \
       -e RET_PUBLIC_URL=https://hubs-${APP_DOMAIN} \
       -e APP_EMAIL=${APP_EMAIL} \
-      ghcr.io/worph/hubs-seed:1.0.0
+      ghcr.io/worph/hubs-seed:2.0.0
 
   tips:
     before_install:
