@@ -38,7 +38,12 @@ services:
       caddy_1.reverse_proxy.transport: http
       caddy_1.reverse_proxy.transport.tls: ""
       caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
-      
+      caddy_2: hubsassets-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "https://{{upstreams 8080}}"
+      caddy_2.reverse_proxy.transport: http
+      caddy_2.reverse_proxy.transport.tls: ""
+      caddy_2.reverse_proxy.transport.tls_insecure_skip_verify: ""
+
   db:
     image: postgres:14-alpine
     container_name: hubs-db
@@ -191,6 +196,11 @@ services:
       caddy_1.reverse_proxy.transport: http
       caddy_1.reverse_proxy.transport.tls: ""
       caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
+      caddy_2: hubsspoke-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "https://{{upstreams 8080}}"
+      caddy_2.reverse_proxy.transport: http
+      caddy_2.reverse_proxy.transport.tls: ""
+      caddy_2.reverse_proxy.transport.tls_insecure_skip_verify: ""
 
   dialog:
     image: hubsfoundation/dialog:stable-331
@@ -234,6 +244,11 @@ services:
       caddy_1.reverse_proxy.transport: http
       caddy_1.reverse_proxy.transport.tls: ""
       caddy_1.reverse_proxy.transport.tls_insecure_skip_verify: ""
+      caddy_2: hubsdialog-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "https://{{upstreams 4443}}"
+      caddy_2.reverse_proxy.transport: http
+      caddy_2.reverse_proxy.transport.tls: ""
+      caddy_2.reverse_proxy.transport.tls_insecure_skip_verify: ""
 
   nearspark:
     image: hubsfoundation/nearspark:stable-28
@@ -256,6 +271,8 @@ services:
       caddy_1: hubsnearspark-${APP_PUBLIC_IP_DASH}.nip.io
       caddy_1.import: gateway_tls
       caddy_1.reverse_proxy: "{{upstreams 5000}}"
+      caddy_2: hubsnearspark-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 5000}}"
 
   photomnemonic:
     image: hubsfoundation/photomnemonic:stable-75
@@ -354,4 +371,11 @@ x-casaos:
 
         Storage: Postgres data at /DATA/AppData/hubs/pgdata, room uploads at /DATA/AppData/hubs/retstorage, secrets at /DATA/AppData/casaos/apps/hubs/.env (chmod 600).
 
-        After install, sign in at https://hubs-${APP_DOMAIN} using ${APP_EMAIL}; an admin login link is mailed (or visible in Reticulum logs if SMTP is unconfigured).
+        Initial admin account: ${APP_EMAIL}. This is the only address with admin privileges by default — Reticulum reads it from turkeyCfg_APP_EMAIL and gates /admin and the dashboard API on a JWT whose email claim matches it. Anyone else can still sign up and create rooms, but they get a regular account, not admin.
+
+        To sign in: visit https://hubs-${APP_DOMAIN}, click Sign in, enter ${APP_EMAIL}. Reticulum mails a one-time login link via the PCS smtp relay; if SMTP is misconfigured the link is also printed in the reticulum container logs (docker logs hubs-reticulum | grep -i token).
+
+        Once signed in as admin, the two operator surfaces are:
+
+        - [Admin panel](https://hubs-${APP_DOMAIN}/admin) — Reticulum admin (rooms, accounts, scene listings, app config, feature flags)
+        - [Spoke editor](https://hubsspoke-${APP_DOMAIN}/) — 3D scene editor for default and custom scenes
