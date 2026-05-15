@@ -1,0 +1,172 @@
+name: n8nbot
+
+services:
+  n8nbot:
+    image: n8nio/n8n:2.14.2
+    container_name: n8nbot
+    restart: unless-stopped
+    user: "0:0"
+    networks:
+      - pcs
+    expose:
+      - 80
+    labels:
+      caddy_0: n8nbot-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: n8nbot-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: n8nbot-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    volumes:
+      - /DATA/AppData/$AppID/data/:/home/node/.n8n
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      GENERIC_TIMEZONE: $TZ
+      N8N_PORT: 80
+      N8N_PROTOCOL: http
+      N8N_EDITOR_BASE_URL: https://n8nbot-${APP_DOMAIN}/
+      WEBHOOK_URL: https://n8nbot-${APP_DOMAIN}/
+      NODE_ENV: production_self_hosted
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8nbot-postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: $APP_DEFAULT_PASSWORD
+      N8N_NODE_FUNCTION_ALLOW_BUILTIN: fs,path
+      NODE_FUNCTION_ALLOW_BUILTIN: fs,path
+      N8N_RUNNERS_ALLOWED_BUILTIN_MODULES: fs,path
+      NODE_OPTIONS: "--max-old-space-size=3072"
+    depends_on:
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+    cpu_shares: 70
+
+  postgres:
+    image: postgres:16.13-alpine
+    container_name: n8nbot-postgres
+    restart: unless-stopped
+    networks:
+      - pcs
+    volumes:
+      - /DATA/AppData/$AppID/pgdata/:/var/lib/postgresql/data
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: $APP_DEFAULT_PASSWORD
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+    cpu_shares: 50
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: n8nbot
+  webui_port: 80
+  author: Yundera Team
+  category: Automation
+  developer: Yundera Team
+  store_app_id: n8nbot
+  description:
+    en_us: |
+      **n8n pre-configured for automated social media bot workflows.**
+
+      n8n Bot is a dedicated n8n instance optimized for running automated posting, commenting, and engagement bots on platforms like Reddit. It comes with built-in support for file-based cookie management, multi-account rotation, and AI-powered content generation via Claude.
+
+      **What's included:**
+      - **Multi-account rotation**: Automatically cycle through multiple accounts with cookie-based session management
+      - **AI content generation**: Generate natural-sounding comments and posts using Claude via Beacon MCP
+      - **Smart scheduling**: Randomized timing with configurable intervals to avoid detection
+      - **Discord notifications**: Get real-time alerts for every action taken
+      - **File system access**: Built-in fs/path module support for cookie and state persistence
+
+      **Requires:**
+      - Browser MCP Bot (for browser automation)
+      - Beacon (for Claude AI content generation)
+
+      Import the provided workflow JSONs to get started.
+    ko_kr: |
+      **소셜 미디어 봇 워크플로우에 최적화된 n8n 인스턴스.**
+
+      n8n Bot은 Reddit 등의 플랫폼에서 자동 포스팅, 댓글, 참여 봇을 실행하기 위해 최적화된 전용 n8n 인스턴스입니다. 파일 기반 쿠키 관리, 멀티 계정 로테이션, Claude를 통한 AI 콘텐츠 생성을 기본 지원합니다.
+
+      **포함 기능:**
+      - **멀티 계정 로테이션**: 쿠키 기반 세션 관리로 여러 계정 자동 순환
+      - **AI 콘텐츠 생성**: Beacon MCP를 통한 Claude로 자연스러운 댓글/포스트 생성
+      - **스마트 스케줄링**: 감지 회피를 위한 랜덤 타이밍과 설정 가능한 간격
+      - **Discord 알림**: 모든 행동에 대한 실시간 알림
+      - **파일 시스템 접근**: 쿠키 및 상태 저장을 위한 fs/path 모듈 지원
+
+      **필수 앱:**
+      - Browser MCP Bot (브라우저 자동화)
+      - Beacon (Claude AI 콘텐츠 생성)
+
+      제공된 워크플로우 JSON 파일을 import하여 시작하세요.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/n8n/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/n8n/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/n8n/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/n8n/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/n8n/thumbnail.png
+  tagline:
+    en_us: n8n optimized for automated bot workflows
+    ko_kr: 봇 자동화 워크플로우에 최적화된 n8n
+  title:
+    en_us: n8n Bot
+  tips:
+    before_install:
+      en_us: |
+        **Prerequisites:**
+        Install these apps first:
+        1. **Browser MCP Bot** - Headless browser for web automation
+        2. **Beacon** - Claude AI for content generation
+
+        **Setup Steps:**
+        1. Create your n8n owner account on first launch
+        2. Generate an API key: Settings > API > Create API Key
+        3. Import the workflow JSON files (main, cookie register, cookie test)
+        4. Log into each Reddit account in Browser MCP Bot and run "Manual Save Cookies"
+        5. Activate the main workflow
+
+        **Environment:**
+        This instance has `fs` and `path` modules enabled for cookie/state file management.
+      ko_kr: |
+        **사전 준비:**
+        먼저 이 앱들을 설치하세요:
+        1. **Browser MCP Bot** - 웹 자동화를 위한 헤드리스 브라우저
+        2. **Beacon** - 콘텐츠 생성을 위한 Claude AI
+
+        **설정 단계:**
+        1. 첫 실행 시 n8n 관리자 계정 생성
+        2. API 키 생성: Settings > API > Create API Key
+        3. 워크플로우 JSON 파일 import (메인, 쿠키 등록, 쿠키 테스트)
+        4. Browser MCP Bot에서 각 Reddit 계정 로그인 후 "Manual Save Cookies" 실행
+        5. 메인 워크플로우 활성화
+
+        **환경:**
+        쿠키/상태 파일 관리를 위해 `fs`, `path` 모듈이 활성화되어 있습니다.
+  index: /
