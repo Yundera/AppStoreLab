@@ -71,12 +71,12 @@ x-casaos:
   author: Yundera Team
   category: Wiki
   developer: DokuWiki Community
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/screenshot-3.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/DokuWiki/thumbnail.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/screenshot-3.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/thumbnail.png
   index: /?hash=$AUTH_HASH  
   tagline:
     en_us: Simple wiki that doesn't require a database
