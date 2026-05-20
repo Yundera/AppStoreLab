@@ -7,7 +7,6 @@ services:
     restart: unless-stopped
     user: "root"
     environment:
-      AUTH_HASH: $AUTH_HASH
       BACKEND_HOST: "dokuwiki"
       BACKEND_PORT: "8080"
       LISTEN_PORT: "80"
@@ -41,7 +40,7 @@ services:
     restart: unless-stopped
     user: "0:0"
     volumes:
-      - /DATA/AppData/$AppID/storage:/storage
+      - /DATA/AppData/$AppID/storage/:/storage
     environment:
       PHP_TIMEZONE: ${TZ:-UTC}
       PHP_MEMORYLIMIT: 256M
@@ -77,7 +76,7 @@ x-casaos:
     - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/screenshot-2.png
     - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/screenshot-3.png
   thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DokuWiki/thumbnail.png
-  index: /?hash=$AUTH_HASH  
+  index: /
   tagline:
     en_us: Simple wiki that doesn't require a database
     ko_kr: 데이터베이스가 필요 없는 간단한 위키
@@ -163,47 +162,57 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-        **Quick Setup:**
-        1. Open the app after installation
-        2. Navigate to the install page (install.php)
-        3. Set your wiki name, superuser account, and password
-        4. Choose your ACL policy
-        5. Done! Start creating wiki pages
+        # Go to /install.php to set up your wiki
 
-        No database setup needed - DokuWiki uses plain text files.
+        After opening the app, the main page will load directly. You **must** manually go to `/install.php` in the URL bar to run the setup wizard.
+
+        1. Go to `https://your-dokuwiki-url/install.php`
+        2. Set your wiki name, superuser account, and password
+        3. Choose your ACL policy (recommended: **Public Wiki**)
+        4. Click Save — done!
+
+        No database needed. All data is stored as plain text files.
       ko_kr: |
-        **빠른 설정:**
-        1. 설치 후 앱 열기
-        2. 설치 페이지(install.php)로 이동
-        3. 위키 이름, 관리자 계정, 비밀번호 설정
-        4. ACL 정책 선택
-        5. 완료! 위키 페이지 만들기 시작
+        # /install.php 에 직접 접속하여 위키를 설정하세요
 
-        데이터베이스 설정 불필요 - DokuWiki는 일반 텍스트 파일을 사용합니다.
+        앱을 열면 메인 페이지가 바로 표시됩니다. 설정 마법사를 실행하려면 URL 주소창에 **직접** `/install.php`를 입력해야 합니다.
+
+        1. `https://your-dokuwiki-url/install.php` 로 이동
+        2. 위키 이름, 관리자 계정, 비밀번호 설정
+        3. ACL 정책 선택 (권장: **Public Wiki**)
+        4. 저장 클릭 — 완료!
+
+        데이터베이스 불필요. 모든 데이터는 텍스트 파일로 저장됩니다.
       zh_cn: |
-        **快速设置：**
-        1. 安装后打开应用
-        2. 导航到安装页面 (install.php)
-        3. 设置维基名称、超级用户账户和密码
-        4. 选择 ACL 策略
-        5. 完成！开始创建维基页面
+        # 请手动访问 /install.php 来设置您的维基
 
-        无需数据库设置 - DokuWiki 使用纯文本文件。
+        打开应用后，主页会直接加载。您**必须**在地址栏中手动输入 `/install.php` 来运行设置向导。
+
+        1. 访问 `https://your-dokuwiki-url/install.php`
+        2. 设置维基名称、超级用户账户和密码
+        3. 选择 ACL 策略（推荐：**Public Wiki**）
+        4. 点击保存 — 完成！
+
+        无需数据库。所有数据以纯文本文件存储。
       fr_fr: |
-        **Configuration rapide:**
-        1. Ouvrez l'app apres l'installation
-        2. Naviguez vers la page d'installation (install.php)
-        3. Definissez le nom du wiki, le compte super-utilisateur et le mot de passe
-        4. Choisissez votre politique ACL
-        5. Termine! Commencez a creer des pages wiki
+        # Allez sur /install.php pour configurer votre wiki
 
-        Aucune configuration de base de donnees necessaire.
+        Apres l'ouverture de l'app, la page principale s'affiche directement. Vous **devez** saisir manuellement `/install.php` dans la barre d'adresse pour lancer l'assistant de configuration.
+
+        1. Allez sur `https://your-dokuwiki-url/install.php`
+        2. Definissez le nom du wiki, le compte super-utilisateur et le mot de passe
+        3. Choisissez votre politique ACL (recommande: **Public Wiki**)
+        4. Cliquez sur Enregistrer — termine!
+
+        Aucune base de donnees necessaire. Toutes les donnees sont stockees en fichiers texte.
       es_es: |
-        **Configuracion rapida:**
-        1. Abre la app despues de la instalacion
-        2. Navega a la pagina de instalacion (install.php)
-        3. Configura el nombre del wiki, cuenta de superusuario y contrasena
-        4. Elige tu politica ACL
-        5. Listo! Empieza a crear paginas wiki
+        # Vaya a /install.php para configurar su wiki
 
-        No se necesita configuracion de base de datos.
+        Al abrir la app, la pagina principal se carga directamente. **Debe** escribir manualmente `/install.php` en la barra de direcciones para ejecutar el asistente de configuracion.
+
+        1. Vaya a `https://your-dokuwiki-url/install.php`
+        2. Configure el nombre del wiki, cuenta de superusuario y contrasena
+        3. Elija su politica ACL (recomendado: **Public Wiki**)
+        4. Haga clic en Guardar — listo!
+
+        No se necesita base de datos. Todos los datos se almacenan como archivos de texto.
