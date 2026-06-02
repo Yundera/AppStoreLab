@@ -1,0 +1,146 @@
+name: discordmcp
+services:
+  discordmcp-proxy:
+    image: ghcr.io/yundera/nginx-hash-lock:1.0.5
+    restart: unless-stopped
+    cpu_shares: 50
+    expose:
+      - 80
+    user: "root"
+    environment:
+      AUTH_HASH: $AUTH_HASH
+      BACKEND_HOST: discordmcp
+      BACKEND_PORT: "9640"
+      LISTEN_PORT: "80"
+    depends_on:
+      - discordmcp
+    networks:
+      - pcs
+    labels:
+      caddy_0: discordmcp-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: discordmcp-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: discordmcp-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+
+  discordmcp:
+    image: ghcr.io/Yundera/AppStoreLab:1.0.0
+    container_name: discordmcp
+    hostname: discordmcp
+    cpu_shares: 50
+    user: $PUID:$PGID
+    restart: unless-stopped
+    expose:
+      - 9640
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - PORT=9640
+    volumes:
+      - type: bind
+        source: /DATA/AppData/discordmcp/
+        target: /app/data
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  index: /?hash=$AUTH_HASH
+  main: discordmcp
+
+  architectures:
+    - amd64
+    - arm64
+  author: Yundera Team
+  category: Chat
+  description:
+    en_us: |
+      **Let your AI talk to Discord — send messages, embeds, and more via MCP**
+
+      Discord MCP connects your AI assistant to Discord through the Model Context Protocol. Once installed, Beacon discovers it automatically and your AI gains the ability to post messages and rich embeds to any Discord channel.
+
+      **What you can do:**
+      - Send text messages to Discord channels from any MCP-compatible AI
+      - Post rich embeds with titles, descriptions, fields, and colors
+      - List all text channels in your Discord server
+      - Configure everything through a simple web dashboard
+      - Zero-config Beacon discovery — just install and it works
+    zh_cn: |
+      **让 AI 与 Discord 对话 — 通过 MCP 发送消息、嵌入内容等**
+
+      Discord MCP 通过模型上下文协议将 AI 助手连接到 Discord。安装后，Beacon 自动发现它，AI 即可向任何 Discord 频道发送消息和富嵌入内容。
+    ko_kr: |
+      **AI가 Discord에 메시지를 보낼 수 있게 해주는 MCP 서버**
+
+      Discord MCP는 AI 어시스턴트를 MCP를 통해 Discord에 연결합니다. 설치하면 Beacon이 자동으로 발견하고, AI가 Discord 채널에 메시지와 임베드를 보낼 수 있게 됩니다.
+  developer: Yundera Team
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DiscordMCP/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DiscordMCP/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DiscordMCP/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DiscordMCP/screenshot-3.png
+  tagline:
+    en_us: Let your AI send messages to Discord via MCP
+    zh_cn: 让 AI 通过 MCP 向 Discord 发送消息
+    ko_kr: AI가 MCP를 통해 Discord에 메시지를 보냅니다
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/DiscordMCP/icon.png
+  title:
+    en_us: Discord MCP
+  chips:
+    - key: mcp
+      name:
+        en_us: MCP
+  tips:
+    before_install:
+      en_us: |
+        **Getting Started**
+
+        After installation, open the Web UI to configure your Discord bot token.
+
+        **Prerequisites:**
+        1. Create a Discord bot at https://discord.com/developers/applications
+        2. Enable the bot and copy the token
+        3. Invite the bot to your Discord server with "Send Messages" permission
+        4. Enter the bot token in the Web UI
+
+        **MCP Integration (for AI/LLMs):**
+
+        **Option 1: Public URL (with hash auth)**
+        ```json
+        {
+          "mcpServers": {
+            "discord-mcp": {
+              "type": "http",
+              "url": "https://discordmcp-${APP_DOMAIN}/mcp?hash=${AUTH_HASH}"
+            }
+          }
+        }
+        ```
+
+        **Option 2: Local Docker connection (no auth required)**
+        ```json
+        {
+          "mcpServers": {
+            "discord-mcp": {
+              "type": "http",
+              "url": "http://discordmcp:9640/mcp"
+            }
+          }
+        }
+        ```
+
+        **Available MCP Tools:**
+        | Tool | Description |
+        |------|-------------|
+        | `send_message` | Send a text message to a Discord channel |
+        | `send_embed` | Send a rich embed message to a Discord channel |
+        | `list_channels` | List all text channels in a Discord server |
+        | `echo` | Echo a message back (test tool) |
