@@ -27,7 +27,7 @@ services:
       caddy_2.reverse_proxy: "{{upstreams 80}}"
 
   discordmcp:
-    image: ghcr.io/Yundera/AppStoreLab:1.0.0
+    image: ghcr.io/bookjjun-ij/discordmcp:1.0.0
     container_name: discordmcp
     hostname: discordmcp
     cpu_shares: 50
