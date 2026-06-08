@@ -20,8 +20,8 @@ services:
       start_period: 40s
     deploy:
       resources:
-        reservations:
-          memory: 256M
+        limits:
+          memory: 512M
     networks:
       - plausible-network
     cpu_shares: 50
@@ -48,8 +48,8 @@ services:
       start_period: 60s
     deploy:
       resources:
-        reservations:
-          memory: 512M
+        limits:
+          memory: 1G
     networks:
       - plausible-network
     cpu_shares: 50
@@ -95,8 +95,8 @@ services:
       PORT: 80
     deploy:
       resources:
-        reservations:
-          memory: 512M
+        limits:
+          memory: 1G
     networks:
       - plausible-network
       - pcs
@@ -110,6 +110,10 @@ networks:
     external: true
 
 x-casaos:
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/$AppID/db /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs /DATA/AppData/$AppID/secrets &&
+    chown -R 70:70 /DATA/AppData/$AppID/db &&
+    chown -R 101:101 /DATA/AppData/$AppID/event-data /DATA/AppData/$AppID/event-logs
   architectures:
     - amd64
     - arm64
@@ -213,18 +217,18 @@ x-casaos:
       **Confidentialité par conception:**
       Plausible Analytics est construit avec la confidentialité comme principe fondamental. Il ne collecte que des données agrégées et ne suit pas les utilisateurs individuels entre les sites web. Toutes les données sont anonymisées et aucune information personnelle n'est collectée.
   developer: Plausible Insights
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/icon.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plausible/icon.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-1.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-2.png
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/screenshot-3.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plausible/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plausible/screenshot-2.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppAppStoreLabStore@main/Apps/Plausible/screenshot-3.png
   tagline:
     en_us: Simple, open-source, lightweight and privacy-friendly web analytics
     ko_kr: 간단하고 오픈소스이며 가벼운 프라이버시 친화적 웹 분석
     zh_cn: 简单、开源、轻量级且注重隐私的网络分析
     es_es: Análisis web simple, de código abierto, ligero y respetuoso con la privacidad
     fr_fr: Analyse web simple, open-source, légère et respectueuse de la vie privée
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Plausible/thumbnail.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Plausible/thumbnail.png
   title:
     en_us: Plausible
   tips:
