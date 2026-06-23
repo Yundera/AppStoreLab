@@ -1,0 +1,175 @@
+name: appshield-demo
+
+services:
+  appshield-demo:
+    image: ghcr.io/yundera/appshield:1.1.0
+    container_name: appshield-demo
+    restart: unless-stopped
+    user: "0:0"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+    expose:
+      - "80"
+    labels:
+      caddy_0: appshield-demo-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: appshield-demo-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: appshield-demo-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    environment:
+      # === HUMANS — Single Sign-On (OIDC → Dex → CasaOS) ===
+      # Presence of OIDC_REGISTRAR_URL enables interactive SSO. The gate self-registers
+      # with the PCS auth-registrar on first login — no client IDs or secrets to inject.
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+
+      # === MACHINES / API (these compose with the human SSO above, no redirect) ===
+      # (A) Shared-secret hash. CasaOS injects a per-app value. Present it as
+      #     ?hash=<value>, "Authorization: Bearer <value>", or HTTP Basic (-u any:<value>).
+      AUTH_HASH: $AUTH_HASH
+      # (B) Real CasaOS identity. The gate forwards Basic (user:pass) or Bearer (CasaOS
+      #     JWT) credentials to the bridge's INTERNAL validator (pcs-network only, port
+      #     8090 — never gateway-routed), which checks them against CasaOS.
+      CREDENTIAL_VALIDATE_URL: "http://casaos-oidc-bridge:8090/validate"
+
+      # === Backend ===
+      BACKEND_HOST: "appshield-demo-whoami"
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+    depends_on:
+      - whoami
+    networks:
+      - pcs
+
+  whoami:
+    image: traefik/whoami:v1.10
+    container_name: appshield-demo-whoami
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: '0.1'
+    expose:
+      - "80"
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: appshield-demo
+  webui_port: 80
+  index: /
+  author: yundera
+  developer: yundera
+  category: Developer
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/AppShieldSecurityDemo/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/AppShieldSecurityDemo/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/AppShieldSecurityDemo/screenshot-1.png
+  store_app_id: appshield-demo
+  is_uncontrolled: false
+  title:
+    en_us: AppShield Security Demo
+  tagline:
+    en_us: "Protect any app with AppShield — SSO for humans, hash or CasaOS credentials for machines"
+  description:
+    en_us: |
+      **🛡️ What this demonstrates**
+
+      A reference deployment that puts **any HTTP backend** behind
+      [AppShield](https://github.com/Yundera/AppShield) — the PCS auth gate — showing
+      **all** of its authentication paths at once. The protected backend is
+      [`traefik/whoami`](https://hub.docker.com/r/traefik/whoami), which echoes the
+      request it received, so you can see exactly what reached the backend after auth.
+
+      AppShield separates **two audiences**, and this app enables both:
+
+      **👤 Humans → Single Sign-On (no secrets to configure)**
+
+      Open the app URL in a browser. AppShield redirects you through the PCS identity
+      provider (Dex → CasaOS) and back. The gate auto-registers as an OIDC client with
+      `auth-registrar` on first login — the single `OIDC_REGISTRAR_URL` is the whole setup.
+
+      **🤖 Machines / API → no redirect, two options**
+
+      Both compose with the human SSO above (they bypass the redirect):
+
+      ```bash
+      APP=https://appshield-demo-<user>.<domain>
+
+      # (A) Real CasaOS identity — use your own CasaOS account (HTTP Basic):
+      curl -u <casaos-user>:<casaos-pass> $APP/
+      #     …or a CasaOS bearer token:
+      curl -H "Authorization: Bearer <casaos-jwt>" $APP/
+
+      # (B) Shared per-app hash (CasaOS provides AUTH_HASH; see the app's env):
+      curl "$APP/?hash=<AUTH_HASH>"
+      curl -H "Authorization: Bearer <AUTH_HASH>" $APP/
+      curl -u any:<AUTH_HASH> $APP/
+      ```
+
+      Path (A) verifies the credential against CasaOS via the bridge's **internal-only**
+      validator (`casaos-oidc-bridge:8090`, never exposed to the internet). Path (B) is a
+      simple shared secret for scripts. An unauthenticated API call returns
+      `401 WWW-Authenticate: Basic`.
+
+      **🧱 What's inside**
+
+      • `appshield-demo` — `appshield:1.1.0` gate (SSO + hash + CasaOS-credential)
+      • `appshield-demo-whoami` — `traefik/whoami:v1.10` as the protected backend
+      • Uses the PCS `pcs`-network services: `auth-registrar`, `dex`, `casaos-oidc-bridge`
+
+      **🎯 Who this is for**
+
+      App developers adding auth to their Yundera apps — SSO for the dashboard, plus a
+      machine path for APIs — without threading OIDC secrets through compose. Fork it,
+      swap `whoami` for your backend, ship.
+  tips:
+    before_install:
+      en_us: |
+        **📋 Requires a PCS on the Dex auth stack**
+
+        This demo needs the `dex`, `auth-registrar`, and `casaos-oidc-bridge` services
+        (provisioned by the current `template-root`). On an older PCS still running
+        Authelia, the CasaOS-credential path is unavailable and first login fails with
+        a DNS error for `auth-registrar`/`casaos-oidc-bridge` in the gate logs.
+
+        **🔑 Credentials**
+
+        - **Browser SSO** and **CasaOS-credential API** both use your CasaOS account
+          (your PCS `DEFAULT_USER` / `DEFAULT_PWD`).
+        - The **shared hash** is the per-app `AUTH_HASH` CasaOS injects (visible in the
+          installed app's environment).
+
+        **🚀 First-visit flow (browser)**
+
+        1. Open the app URL → gate returns `302 → /nhl-auth/oidc/login`
+        2. Gate POSTs to `auth-registrar` → gets a fresh OIDC client
+        3. Browser is bounced to the Dex login → "Log in with CasaOS"
+        4. Enter your CasaOS credentials → redirected back to the whoami output
+
+        **⚠️ Container-naming constraint**
+
+        Keep the service name, `container_name`, `store_app_id`, and top-level `name:`
+        all matching (lowercase alnum + `-`). The mesh-router routes subdomains by
+        container name, and `auth-registrar` derives the OIDC `client_id` from the same
+        name via PTR on the `pcs` network — so the gate container **must** be named after
+        the app's subdomain, and the backend (`whoami`) gets a different name.
+
+        **💾 Resources:** ~160MB memory, ~0.3 CPU cores
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/appshield-demo 2>/dev/null || true
+    chmod -R 755 /DATA/AppData/appshield-demo/ 2>/dev/null || true
