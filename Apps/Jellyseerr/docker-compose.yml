@@ -1,1 +1,69 @@
-
+name: jellyseerr
+services:
+    jellyseerr:
+        cpu_shares: 50
+        container_name: jellyseerr
+        deploy:
+            resources:
+                limits:
+                    memory: "268435456"
+        environment:
+            TZ: $TZ
+        hostname: jellyseerr
+        image: fallenbagel/jellyseerr:2.7.3
+        labels:
+            icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Jellyseerr/icon.png
+            caddy_0: jellyseerr-${APP_DOMAIN}
+            caddy_0.import: gateway_tls
+            caddy_0.reverse_proxy: "{{upstreams 5055}}"
+            caddy_1: jellyseerr-${APP_PUBLIC_IP_DASH}.nip.io
+            caddy_1.import: gateway_tls
+            caddy_1.reverse_proxy: "{{upstreams 5055}}"
+            caddy_2: jellyseerr-${APP_PUBLIC_IP_DASH}.sslip.io
+            caddy_2.reverse_proxy: "{{upstreams 5055}}"
+        expose:
+            - "5055"
+        networks:
+            pcs: null
+        restart: unless-stopped
+        volumes:
+            - type: bind
+              source: /DATA/AppData/jellyseerr/config
+              target: /app/config
+              bind:
+                create_host_path: true
+networks:
+    pcs:
+        name: pcs
+        external: true
+x-casaos:
+    main: jellyseerr
+    author: Yundera Community
+    category: Media
+    description:
+        en_us: Jellyseerr is an open-source media request and discovery manager for Jellyfin, Plex, and Emby. Allow users to request movies and TV shows, manage requests, and get notified when content is available.
+    developer: fallenbagel
+    hostname: jellyseerr-${APP_DOMAIN}
+    icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Jellyseerr/icon.png
+    index: /
+    is_uncontrolled: false
+    port_map: "443"
+    scheme: https
+    store_app_id: jellyseerr
+    tagline:
+        en_us: Request and discover movies and TV shows for your media server.
+    title:
+        en_us: Jellyseerr
+    tips:
+        before_install:
+            en_us: |
+                **Getting Started:**
+                1. Open Jellyseerr after installation
+                2. Choose your media server type (Jellyfin, Plex, or Emby)
+                3. Sign in with your media server credentials
+                4. Configure your media libraries and request settings
+    screenshot_link:
+        - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Jellyseerr/screenshot-1.png
+        - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Jellyseerr/screenshot-2.png
+    thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Jellyseerr/thumbnail.png
+    webui_port: 5055
