@@ -2,7 +2,7 @@ name: appshield-demo
 
 services:
   appshield-demo:
-    image: ghcr.io/yundera/appshield:1.1.0
+    image: ghcr.io/yundera/appshield:2.0.3
     container_name: appshield-demo
     restart: unless-stopped
     user: "0:0"
@@ -27,6 +27,11 @@ services:
       # Presence of OIDC_REGISTRAR_URL enables interactive SSO. The gate self-registers
       # with the PCS auth-registrar on first login — no client IDs or secrets to inject.
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      # Multi-domain SSO: the gate registers a callback for each of its public
+      # hosts (<app>-<suffix> for each suffix below — the same set as the caddy_*
+      # labels above) and returns you to whichever host you logged in on. Same
+      # substitution vars as the labels; the registrar verifies against the same.
+      REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
 
       # === MACHINES / API (these compose with the human SSO above, no redirect) ===
       # (A) Shared-secret hash. CasaOS injects a per-app value. Present it as
