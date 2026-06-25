@@ -3,7 +3,6 @@ services:
     jellyseerr:
         cpu_shares: 50
         container_name: jellyseerr
-        user: "0:0"
         deploy:
             resources:
                 limits:
@@ -58,6 +57,9 @@ x-casaos:
         en_us: Request and discover movies and TV shows for your media server.
     title:
         en_us: Jellyseerr
+    pre-install-cmd: |
+        mkdir -p /DATA/AppData/jellyseerr/config
+        chmod -R 777 /DATA/AppData/jellyseerr/config
     tips:
         before_install:
             en_us: |
