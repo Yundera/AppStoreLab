@@ -3,6 +3,7 @@ services:
     jellyseerr:
         cpu_shares: 50
         container_name: jellyseerr
+        user: "0:0"
         deploy:
             resources:
                 limits:
@@ -30,6 +31,8 @@ services:
             - type: bind
               source: /DATA/AppData/jellyseerr/config
               target: /app/config
+              bind:
+                create_host_path: true
 networks:
     pcs:
         name: pcs
@@ -55,10 +58,6 @@ x-casaos:
         en_us: Request and discover movies and TV shows for your media server.
     title:
         en_us: Jellyseerr
-    pre-install-cmd: |
-        mkdir -p /DATA/AppData/jellyseerr/config
-        docker run --rm -v /DATA/AppData/jellyseerr:/data ubuntu:22.04 chown -R 1000:1000 /data
-        docker run --rm -v /DATA/AppData/jellyseerr:/data ubuntu:22.04 chmod -R 755 /data
     tips:
         before_install:
             en_us: |
