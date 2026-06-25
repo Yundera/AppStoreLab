@@ -57,8 +57,8 @@ x-casaos:
         en_us: Jellyseerr
     pre-install-cmd: |
         mkdir -p /DATA/AppData/jellyseerr/config
-        docker run --rm -v /DATA/AppData/jellyseerr:/data ubuntu:22.04 chown -R 1000:1000 /data/config
-        docker run --rm -v /DATA/AppData/jellyseerr:/data ubuntu:22.04 chmod -R 755 /data/config
+        docker run --rm -v /DATA/AppData/jellyseerr:/data ubuntu:22.04 chown -R 1000:1000 /data
+        docker run --rm -v /DATA/AppData/jellyseerr:/data ubuntu:22.04 chmod -R 755 /data
     tips:
         before_install:
             en_us: |
