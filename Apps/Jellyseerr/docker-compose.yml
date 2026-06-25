@@ -3,6 +3,7 @@ services:
     jellyseerr:
         cpu_shares: 50
         container_name: jellyseerr
+        user: "0:0"
         deploy:
             resources:
                 limits:
