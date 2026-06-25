@@ -37,6 +37,9 @@ networks:
         name: pcs
         external: true
 x-casaos:
+    architectures:
+        - amd64
+        - arm64
     main: jellyseerr
     author: Yundera Community
     category: Media
