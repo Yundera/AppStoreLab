@@ -1,0 +1,74 @@
+name: guide
+
+services:
+  guide:
+    image: nginx:1.27-alpine
+    container_name: guide
+    user: "0:0"
+    expose:
+      - 80
+    labels:
+      caddy_0: guide-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: guide-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: guide-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    volumes:
+      - /DATA/AppData/$AppID/html/:/usr/share/nginx/html/:ro
+      - /DATA/AppData/$AppID/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    cpu_shares: 80
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    restart: unless-stopped
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: guide
+  webui_port: 80
+  store_app_id: guide
+  category: Utilities
+  author: Yundera Team
+  developer: Yundera
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Guide/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Guide/screenshot-1.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Guide/screenshot-1.png
+  title:
+    en_us: Guide
+  tagline:
+    en_us: Learn how to use your Personal Cloud Server
+  description:
+    en_us: |
+      Your personal guide to using PCS. Learn how to manage apps, files,
+      and settings. Includes step-by-step tutorials for popular apps
+      like Immich, Jellyfin, and more.
+  tips:
+    before_install:
+      en_us: |
+        This app provides documentation and guides for your PCS.
+        No additional configuration is needed.
+  index: /
+  scheme: https
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/guide/html/css/ /DATA/AppData/guide/html/js/
+    REPO="https://raw.githubusercontent.com/BookJJun-IJ/GuideApp/main"
+    curl -fsSL "$REPO/src/index.html" -o /DATA/AppData/guide/html/index.html
+    curl -fsSL "$REPO/src/guide.html" -o /DATA/AppData/guide/html/guide.html
+    curl -fsSL "$REPO/src/css/style.css" -o /DATA/AppData/guide/html/css/style.css
+    curl -fsSL "$REPO/src/js/app.js" -o /DATA/AppData/guide/html/js/app.js
+    curl -fsSL "$REPO/src/js/marked.min.js" -o /DATA/AppData/guide/html/js/marked.min.js
+    curl -fsSL "$REPO/src/nginx.conf" -o /DATA/AppData/guide/nginx.conf
