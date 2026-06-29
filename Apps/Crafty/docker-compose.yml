@@ -1,10 +1,10 @@
 name: crafty
 services:
   crafty:
-    image: registry.gitlab.com/crafty-controller/crafty-4:4.10.3
+    image: registry.gitlab.com/crafty-controller/crafty-4:4.10.7
     container_name: crafty
     hostname: crafty
-    user: "0:0"                          # Crafty requires root; document this in rationale.md
+    user: "0:0"                          # Crafty requires root; see rationale.md
     cpu_shares: 50
     restart: unless-stopped
     expose:
@@ -77,10 +77,10 @@ x-casaos:
   category: Games
   developer: Arcadia Technology
   store_app_id: crafty
-  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Crafty/icon.png
-  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Crafty/thumbnail.png
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Crafty/icon.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Crafty/thumbnail.png
   screenshot_link:
-    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Crafty/screenshot-1.png
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStore@main/Apps/Crafty/screenshot-1.png
   title:
     en_us: Crafty Controller
   tagline:
@@ -101,7 +101,7 @@ x-casaos:
       supervise les processus serveur, automatise les sauvegardes, cree des
       serveurs a partir des loaders courants, donne acces a la console en direct
       et gere les roles et permissions par utilisateur.
-    ko_kr: |  
+    ko_kr: |
       Crafty Controller는 브라우저에서 마인크래프트 서버(자바 및 베드락)를
       생성, 실행, 관리할 수 있는 웹 GUI입니다. 서버 프로세스 실행 및 관리,
       백업 자동화, 일반 로더 기반 서버 생성, 실시간 콘솔 접근, 사용자별 역할
@@ -109,25 +109,28 @@ x-casaos:
   tips:
     before_install:
       en_us: |
-       After install, open the app and log in.
+        **Getting started**
 
-        Default account:
-        | Username | Password                |
-        | -------- | ----------------------- |
-        | `admin`  | `$APP_DEFAULT_PASSWORD` |
+        Login: `admin`
+        Password: `$APP_DEFAULT_PASSWORD`
 
-        Please change this password immediately after your first login.
+        **Creating a server**
 
-        If the preset password does not work, Crafty generated its own on first
-        boot. Open the Files app and read the file at
-        `AppData/crafty/config/default-creds.txt`.
+        When you create a server, choose a port in the `25500-25600` range
+        (the ports this app publishes). Bedrock servers use UDP port `19132`.
 
-        Note: Minecraft servers you create must use a port in the 25500-25600
-        range (the ports this app publishes). Bedrock servers use UDP 19132.
+        **Sharing your server with players**
+
+        Give players the address below, plus the port of the server you
+        created:
+ 
+        - **Java (Java Edition on PC):** host `$APP_PUBLIC_IP_DASH.sslip.io`, port `25565`
+          (or whichever port you chose)
+        - **Bedrock (Consoles + Mobile + Bedrock Edition on PC):** host `$APP_PUBLIC_IP_DASH.sslip.io`, port `19132`
+
+        Your server must be reachable from the internet on that port. If your
+        PCS is behind CGNAT or the port is not forwarded, players outside your
+        network may be unable to connect.
   pre-install-cmd: |
     mkdir -p /DATA/AppData/$AppID/config /DATA/AppData/$AppID/servers /DATA/AppData/$AppID/backups /DATA/AppData/$AppID/logs /DATA/AppData/$AppID/import
     chown $PUID:$PGID /DATA/AppData/$AppID
-    if [ ! -f /DATA/AppData/$AppID/.initialized ]; then
-      printf '{"username":"admin","password":"%s"}' "$APP_DEFAULT_PASSWORD" > /DATA/AppData/$AppID/config/default.json
-      touch /DATA/AppData/$AppID/.initialized
-    fi
