@@ -3,6 +3,7 @@ services:
     jellyseerr:
         cpu_shares: 50
         container_name: jellyseerr
+        user: "0:0"
         deploy:
             resources:
                 limits:
@@ -37,6 +38,9 @@ networks:
         name: pcs
         external: true
 x-casaos:
+    architectures:
+        - amd64
+        - arm64
     main: jellyseerr
     author: Yundera Community
     category: Media
