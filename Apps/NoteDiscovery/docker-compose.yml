@@ -2,7 +2,7 @@ name: notediscovery
 
 services:
   notediscovery:
-    image: ghcr.io/gamosoft/notediscovery:0.16.3
+    image: ghcr.io/gamosoft/notediscovery:0.19.2
     container_name: notediscovery
     restart: unless-stopped
     user: "0:0"
