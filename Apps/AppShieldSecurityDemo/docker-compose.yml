@@ -2,7 +2,7 @@ name: appshield-demo
 
 services:
   appshield-demo:
-    image: ghcr.io/yundera/appshield:2.0.3
+    image: ghcr.io/yundera/appshield:2.0.6
     container_name: appshield-demo
     restart: unless-stopped
     user: "0:0"
