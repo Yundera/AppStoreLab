@@ -1,0 +1,302 @@
+name: omnigent
+
+services:
+  omnigent-db:
+    image: postgres:16.13-alpine
+    container_name: omnigent-db
+    restart: unless-stopped
+    user: "0:0"
+    volumes:
+      - /DATA/AppData/omnigent/pgdata/:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: omnigent
+      POSTGRES_USER: omnigent
+      POSTGRES_PASSWORD: $APP_DEFAULT_PASSWORD
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omnigent -d omnigent"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+    networks:
+      - omnigent-network
+    cpu_shares: 50
+
+  omnigent:
+    image: ghcr.io/omnigent-ai/omnigent-server:v0.10.0
+    container_name: omnigent
+    restart: unless-stopped
+    user: "0:0"
+    depends_on:
+      omnigent-db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    labels:
+      caddy_0: omnigent-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 8000}}"
+      caddy_1: omnigent-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 8000}}"
+      caddy_2: omnigent-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 8000}}"
+    volumes:
+      - /DATA/AppData/omnigent/data/:/data
+    environment:
+      DATABASE_URL: postgresql+psycopg://omnigent:$APP_DEFAULT_PASSWORD@omnigent-db:5432/omnigent
+      ARTIFACT_DIR: /data/artifacts
+      HOST: 0.0.0.0
+      PORT: "8000"
+      # Anchors the server's data dir on the persistent volume: the admin
+      # roster (/data/admins) and allowed-domains file live beside it.
+      # Unset would fall back to /root/.omnigent inside the container.
+      OMNIGENT_ADMIN_CREDENTIALS_PATH: /data/admin-credentials
+      # Built-in accounts auth (username + password). Seeding the first admin
+      # here keeps install hands-off — without it the server boots into a
+      # "create the first admin" web form and the host cannot sign in.
+      OMNIGENT_AUTH_ENABLED: "1"
+      OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME: admin
+      OMNIGENT_ACCOUNTS_INIT_ADMIN_PASSWORD: $APP_DEFAULT_PASSWORD
+      # Must be valid hex — the server refuses to start otherwise.
+      # Generated once by pre-install-cmd into the app's .env.
+      OMNIGENT_ACCOUNTS_COOKIE_SECRET: ${OMNIGENT_COOKIE_SECRET}
+      OMNIGENT_ACCOUNTS_BASE_URL: https://omnigent-${APP_DOMAIN}
+      OMNIGENT_ACCOUNTS_AUTO_OPEN: "0"
+      OMNIGENT_NO_UPDATE_CHECK: "1"
+      TZ: Etc/UTC
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: '1.5'
+        reservations:
+          memory: 512M
+    networks:
+      - omnigent-network
+      - pcs
+    cpu_shares: 70
+
+  omnigent-host:
+    # Official host image: omnigent CLI + python 3.12, node 22, git, tmux,
+    # bubblewrap, claude and codex CLIs. The server image has none of these,
+    # so this container is what agents actually execute on.
+    image: ghcr.io/omnigent-ai/omnigent-host:v0.10.0
+    container_name: omnigent-host
+    hostname: omnigent-host
+    restart: unless-stopped
+    user: "0:0"
+    depends_on:
+      omnigent:
+        condition: service_healthy
+    entrypoint: ["/usr/bin/bash", "/opt/omnigent-bootstrap/host-entrypoint.sh"]
+    volumes:
+      # Bootstrap script, fetched by pre-install-cmd.
+      - /DATA/AppData/omnigent/bootstrap/:/opt/omnigent-bootstrap/
+      # Working directory agents operate in.
+      - /DATA/AppData/omnigent/workspace/:/workspace
+      # Host identity, server token and CLI config.
+      - /DATA/AppData/omnigent/host-state/:/root/.omnigent
+      # Harness credentials. These are the OAuth/subscription logins created by
+      # `omnigent setup`; without persisting them every restart needs a re-login.
+      - /DATA/AppData/omnigent/claude/:/root/.claude
+      - /DATA/AppData/omnigent/codex/:/root/.codex
+      - /DATA/AppData/omnigent/claude.json:/root/.claude.json
+    environment:
+      OMNIGENT_SERVER_URL: http://omnigent:8000
+      OMNIGENT_ADMIN_USERNAME: admin
+      OMNIGENT_ADMIN_PASSWORD: $APP_DEFAULT_PASSWORD
+      OMNIGENT_HOST_WORKDIR: /workspace
+      OMNIGENT_HOST_DISPLAY_NAME: omnigent-host
+      OMNIGENT_NO_UPDATE_CHECK: "1"
+      # Optional — set these in the app's env to authenticate the API-key
+      # harnesses. Subscription logins go through `omnigent setup` instead.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      TZ: Etc/UTC
+    # Agent harnesses run under tmux and expect a tty.
+    tty: true
+    stdin_open: true
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+    networks:
+      - omnigent-network
+    cpu_shares: 50
+
+networks:
+  omnigent-network:
+    driver: bridge
+  pcs:
+    name: pcs
+    external: true
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: omnigent
+  webui_port: 8000
+  index: /
+  author: Yundera Team
+  category: Developer
+  developer: Omnigent
+  store_app_id: omnigent
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Omnigent/icon.png
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Omnigent/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Omnigent/thumbnail.png
+  title:
+    en_us: Omnigent
+    fr_fr: Omnigent
+    zh_cn: Omnigent
+  tagline:
+    en_us: One orchestration layer over Claude Code, Codex and other coding agents.
+    fr_fr: Une couche d'orchestration unique pour Claude Code, Codex et autres agents de code.
+    zh_cn: 统一编排 Claude Code、Codex 等编程智能体。
+  description:
+    en_us: |
+      **Run and orchestrate multiple coding agents from one web interface**
+
+      Omnigent is an open-source meta-harness: a common orchestration layer over
+      Claude Code, Codex, Cursor, OpenCode, Hermes, Pi and custom agents. Instead
+      of a terminal per agent, you get one interface where sessions run side by
+      side, stay synchronised across your devices, and keep their history.
+
+      **Key Features:**
+      - One interface for many agent harnesses — Claude Code, Codex and more
+      - Sessions survive disconnects; pick them up from any device
+      - Real-time collaboration and session sharing
+      - Policy-based governance: spend caps, action approval, rate limits
+      - Custom agents defined in YAML
+      - Bundled multi-agent orchestrators (polly, debby)
+
+      **How it is packaged here:**
+      Three containers. `omnigent` serves the web interface, `omnigent-db` stores
+      sessions, and `omnigent-host` is the machine your agents actually run on —
+      it ships the full toolchain (git, node, tmux, claude, codex) and registers
+      itself with the server automatically on first boot.
+
+      **Perfect for:**
+      Developers who use more than one coding agent and want them in one place,
+      on their own server, with the work and credentials staying on their PCS.
+    fr_fr: |
+      **Exécutez et orchestrez plusieurs agents de code depuis une seule interface web**
+
+      Omnigent est un méta-harnais open-source : une couche d'orchestration
+      commune au-dessus de Claude Code, Codex, Cursor, OpenCode, Hermes, Pi et
+      d'agents personnalisés. Au lieu d'un terminal par agent, une seule interface
+      où les sessions tournent côte à côte et conservent leur historique.
+
+      **Fonctionnalités principales :**
+      - Une interface pour plusieurs harnais — Claude Code, Codex et d'autres
+      - Les sessions survivent aux déconnexions ; reprenez-les depuis n'importe quel appareil
+      - Collaboration en temps réel et partage de sessions
+      - Gouvernance par politiques : plafonds de dépense, approbation d'actions
+      - Agents personnalisés définis en YAML
+      - Orchestrateurs multi-agents inclus (polly, debby)
+
+      **Composition :**
+      Trois conteneurs. `omnigent` sert l'interface web, `omnigent-db` stocke les
+      sessions, et `omnigent-host` est la machine sur laquelle vos agents
+      s'exécutent réellement — elle embarque la chaîne d'outils complète et
+      s'enregistre automatiquement au premier démarrage.
+    zh_cn: |
+      **在一个网页界面中运行和编排多个编程智能体**
+
+      Omnigent 是一个开源的元框架：为 Claude Code、Codex、Cursor、OpenCode、
+      Hermes、Pi 及自定义智能体提供统一的编排层。无需为每个智能体开一个终端，
+      所有会话在同一界面中并行运行并保留历史记录。
+
+      **主要功能：**
+      - 一个界面管理多种智能体框架
+      - 会话在断线后依然存在，可从任意设备继续
+      - 实时协作与会话共享
+      - 基于策略的治理：支出上限、操作审批、速率限制
+      - 使用 YAML 定义自定义智能体
+
+      **打包方式：**
+      三个容器。`omnigent` 提供网页界面，`omnigent-db` 存储会话，
+      `omnigent-host` 是智能体实际运行的机器，内置完整工具链并在首次启动时自动注册。
+  tips:
+    before_install:
+      en_us: |
+        **Sign in with:** username `admin`, password `$APP_DEFAULT_PASSWORD`
+
+        **Connect a coding agent after install.** No agent credentials ship with
+        this app — you add your own, once, on the host container:
+
+        ```shell
+        docker exec -it omnigent-host omnigent setup
+        ```
+
+        Run it on `omnigent-host`, not on `omnigent`. The server container never
+        executes agents, so credentials placed there are ignored. The host
+        re-checks its harnesses every 60 seconds and the new agent appears in the
+        picker on its own — no restart needed.
+
+        Supported there: a Claude Pro/Max subscription or an Anthropic API key,
+        a ChatGPT subscription or an OpenAI API key. Credentials persist in
+        `/DATA/AppData/omnigent/claude/` and `/DATA/AppData/omnigent/codex/`.
+
+        **Where agents work:** `/DATA/AppData/omnigent/workspace/`, mounted as
+        `/workspace`. Nothing else on your PCS is exposed to them by default.
+
+        **Note:** agents run with full shell access inside the host container and
+        can spend money against whatever account you connect. The governance
+        settings in the web interface (spend caps, action approval) are worth
+        configuring before you leave one running unattended.
+      fr_fr: |
+        **Connexion :** utilisateur `admin`, mot de passe `$APP_DEFAULT_PASSWORD`
+
+        **Ajoutez un agent après l'installation.** Aucun identifiant d'agent n'est
+        fourni — configurez le vôtre, une seule fois, sur le conteneur hôte :
+
+        ```shell
+        docker exec -it omnigent-host omnigent setup
+        ```
+
+        À exécuter sur `omnigent-host`, pas sur `omnigent` : le conteneur serveur
+        n'exécute jamais d'agent. L'hôte revérifie ses harnais toutes les 60
+        secondes, l'agent apparaît ensuite tout seul — aucun redémarrage requis.
+
+        **Répertoire de travail :** `/DATA/AppData/omnigent/workspace/`.
+
+        **Attention :** les agents disposent d'un accès shell complet dans le
+        conteneur hôte et peuvent engager des dépenses sur le compte connecté.
+      zh_cn: |
+        **登录：** 用户名 `admin`，密码 `$APP_DEFAULT_PASSWORD`
+
+        **安装后连接编程智能体。** 本应用不附带任何智能体凭据，请在主机容器上
+        配置一次：
+
+        ```shell
+        docker exec -it omnigent-host omnigent setup
+        ```
+
+        必须在 `omnigent-host` 上运行，而不是 `omnigent`：服务器容器从不执行
+        智能体。主机每 60 秒重新检测一次，无需重启。
+
+        **工作目录：** `/DATA/AppData/omnigent/workspace/`
+
+        **注意：** 智能体在主机容器内拥有完整的 shell 权限，并会消耗所连接账户的额度。
+  pre-install-cmd: |
+    mkdir -p /DATA/AppData/omnigent/pgdata /DATA/AppData/omnigent/data /DATA/AppData/omnigent/workspace /DATA/AppData/omnigent/host-state /DATA/AppData/omnigent/claude /DATA/AppData/omnigent/codex /DATA/AppData/omnigent/bootstrap &&
+    touch /DATA/AppData/omnigent/claude.json &&
+    wget -q https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Omnigent/pre-install/host-entrypoint.sh -O /DATA/AppData/omnigent/bootstrap/host-entrypoint.sh &&
+    chmod 755 /DATA/AppData/omnigent/bootstrap/host-entrypoint.sh &&
+    if ! grep -q '^OMNIGENT_COOKIE_SECRET=' /DATA/AppData/casaos/apps/omnigent/.env 2>/dev/null; then
+      printf 'OMNIGENT_COOKIE_SECRET=%s\n' "$(openssl rand -hex 32)" >> /DATA/AppData/casaos/apps/omnigent/.env
+    fi
