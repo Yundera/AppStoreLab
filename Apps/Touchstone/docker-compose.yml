@@ -6,7 +6,7 @@ services:
   # sidecar below. The agent's callback comes in here directly (see TOUCHSTONE_CALLBACK_URL)
   # because it is a service-to-service call that must not meet an interactive SSO redirect.
   touchstone-backend:
-    image: ghcr.io/worph/touchstone:1.0.1
+    image: ghcr.io/worph/touchstone:1.0.2
     container_name: touchstone-backend
     hostname: touchstone-backend
     restart: unless-stopped
@@ -24,7 +24,13 @@ services:
       # name resolves to whatever Beacon is installed here, so nothing points off the box.
       TOUCHSTONE_AGENT_URL: "http://beacon-backend:9300/mcp"
       TOUCHSTONE_AGENT_TOOL: "claude-code__query_claude"
-      TOUCHSTONE_AGENT_VIA: "direct"
+      # `beacon`, not `direct`. That URL is an **aggregator**: its own tools/list offers
+      # `call`, `overview`, `server_doc`, `tool_doc` and nothing else, so `direct` — which
+      # means "the tool is a first-class tool on this endpoint" — can never find
+      # `claude-code__query_claude` and the agent probes unreachable on every fresh install.
+      # `beacon` wraps the call in the aggregator's own `call` tool, which is how everything
+      # else on this box reaches it.
+      TOUCHSTONE_AGENT_VIA: "beacon"
 
       # Where the agent calls BACK to record each requirement as it settles it. This is the
       # one place the dependency arrow points inward, and it names the **backend** rather than
@@ -38,6 +44,13 @@ services:
       # work, and an audit whose tab was stolen mid-install records the theft against the app
       # under audit.
       TOUCHSTONE_BROWSER_URL: "http://touchstone-browser-1:9746/mcp"
+
+      # The demo instances a functional audit installs into, and the human-readable board the
+      # UI links beside its own probe. Named here rather than left to the built-in defaults so
+      # this file is the single place an operator changes them — they are Nasselle product
+      # infrastructure, not something every install should inherit silently.
+      TOUCHSTONE_POOL_URL: "https://app.nasselle.com/demo/api/demos"
+      TOUCHSTONE_BOARD_URL: "https://app.nasselle.com/demo/admin/manage"
     volumes:
       # Trailing slash: this is the bind the `folders` block below is generated from.
       - /DATA/AppData/touchstone/:/DATA
@@ -202,4 +215,6 @@ x-casaos:
 
         Everything Touchstone keeps lives in `AppData/touchstone/` — `config.yaml`, the rubric under `protocols/`, the report archive under `reports/`, trials, and runtime state. Back up that one folder and you have backed up the whole system. Uninstalling archives it like any other app, so your audit history survives.
 
-        The browser sidecar deliberately has **no** stored profile. A session surviving between audits would make an unprotected app look protected on the one check that catches that, so it starts cold every time.
+        The browser sidecar deliberately has **no** stored profile. A session surviving between audits would make an unprotected app look protected on the one check that catches that, so it starts cold every time — and it is Touchstone's own, never the box-wide `browsermcp`, whose tabs belong to other work.
+
+        **Backups.** Uninstalling archives `AppData/touchstone/` like any other app, so your audit history survives one. It is still a single copy on this server's disk: point Settings → Backups at a remote engine if the history is meant to outlive the disk.
