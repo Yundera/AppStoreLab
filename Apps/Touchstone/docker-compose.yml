@@ -6,7 +6,7 @@ services:
   # sidecar below. The agent's callback comes in here directly (see TOUCHSTONE_CALLBACK_URL)
   # because it is a service-to-service call that must not meet an interactive SSO redirect.
   touchstone-backend:
-    image: ghcr.io/worph/touchstone:1.0.2
+    image: ghcr.io/worph/touchstone:1.1.0
     container_name: touchstone-backend
     hostname: touchstone-backend
     restart: unless-stopped
@@ -40,6 +40,24 @@ services:
       # through then leaves no record of what it had already established.
       TOUCHSTONE_CALLBACK_URL: "http://touchstone-backend:8080/api/v1/mcp"
 
+      # Touchstone's own administration, served as MCP at /api/v1/mcp/admin and announced to
+      # this box's Beacon by the `touchstone-mcp` sidecar below — the same seven tools the
+      # chat on the front page uses. Six read what is written down (the archive, a fix brief,
+      # the log, the backlog, the schedule); `run_assay` starts one audit and returns.
+      #
+      # It ships ON here because the sidecar is in this file: a beaconify container in front
+      # of a disabled route would announce a server with no tools, which is worse than not
+      # announcing one. Two things bound what that is worth to an attacker who is already on
+      # this box's `pcs` network — no tool can write a verdict or name a repo and ref
+      # (that is invariant 6, and it is enforced in the tool registry, not here), and
+      # `run_assay` refuses while `runner.enabled` is false, which is the shipped default.
+      #
+      # To narrow it to answers-only, set TOUCHSTONE_ADMIN_MCP_READ_ONLY: "on" — `run_assay`
+      # then disappears from tools/list and is refused if asked for anyway. To close it
+      # entirely, set TOUCHSTONE_ADMIN_MCP: "off" and delete the sidecar; the route is then
+      # not registered at all.
+      TOUCHSTONE_ADMIN_MCP: "on"
+
       # Touchstone's OWN browser, never the box-wide `browsermcp`: that one is busy with other
       # work, and an audit whose tab was stolen mid-install records the theft against the app
       # under audit.
@@ -70,7 +88,7 @@ services:
   # makes an unprotected app look protected on the very check that catches auth bypass — so
   # the profile is ephemeral by design. Do not "fix" this by adding a volume.
   touchstone-browser-1:
-    image: ghcr.io/worph/browser-mcp:1.1.5
+    image: ghcr.io/worph/browser-mcp:1.1.7
     container_name: touchstone-browser-1
     hostname: touchstone-browser-1
     restart: unless-stopped
@@ -98,6 +116,48 @@ services:
         limits:
           cpus: "2"
           memory: 2G
+
+  # ── the operator tools, announced to this box's Beacon ────────────────────────────────
+  # A stock beaconify sidecar: it answers Beacon's UDP discovery, fetches tools/list from the
+  # backend once at startup and periodically after, and proxies /mcp through to it. Nothing
+  # about Touchstone is rebuilt for this.
+  #
+  # It points at `touchstone-backend` directly and NOT at the `touchstone` sidecar, for the
+  # same reason TOUCHSTONE_CALLBACK_URL does: through the SSO gate it would fetch an HTML
+  # login page instead of a tool list, and register a server with no tools.
+  #
+  # On `pcs`, and here that is the point rather than a hazard. The browser sidecar above is
+  # deliberately kept OFF `pcs` because it announces itself and would be discovered as the
+  # box-wide browser; this container announces itself because being discovered is the whole
+  # job. What it announces is Touchstone's admin tools and nothing else.
+  touchstone-mcp:
+    image: ghcr.io/worph/beaconify@sha256:63ce59fbe15365540cb3d45849a46b68b8132a2c1d605ea8b7b310d010540107
+    container_name: touchstone-mcp
+    hostname: touchstone-mcp
+    restart: unless-stopped
+    cpu_shares: 20
+    expose:
+      - 9099
+    environment:
+      TZ: $TZ
+      BEACONIFY_NAME: touchstone
+      BEACONIFY_DESCRIPTION: "Touchstone conformance audits — every app's verdict, the evidence behind it, a fix brief, the audit log and the backlog; and starting an audit"
+      # The admin surface, not /api/v1/mcp — that one is the audit agent's run ledger, scoped
+      # to a token that dies with its run, and it has nothing to say to an aggregator.
+      BEACONIFY_UPSTREAM_URL: http://touchstone-backend:8080/api/v1/mcp/admin
+      # If you set a bearer on the backend (admin_mcp.token in config.yaml), name it here as
+      # a whole header value — `Bearer <token>` — and the sidecar injects it on every
+      # forwarded call, so nothing that calls through Beacon ever holds it.
+      # BEACONIFY_AUTH: "Bearer ..."
+    depends_on:
+      - touchstone-backend
+    networks:
+      - pcs
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
 
   # ── the only public surface ───────────────────────────────────────────────────────────
   touchstone:
