@@ -67,6 +67,12 @@ services:
       # UI links beside its own probe. Named here rather than left to the built-in defaults so
       # this file is the single place an operator changes them — they are Nasselle product
       # infrastructure, not something every install should inherit silently.
+      # Touchstone's own address as a demo bench reaches it, and the only thing a trial cannot
+      # work out for itself: the request that starts one arrives on `pcs` under a service name
+      # no bench can resolve. Without it a trial still runs, but records its functional section
+      # blocked — there is nowhere to serve the files under trial from.
+      TOUCHSTONE_PUBLIC_BASE_URL: "https://touchstone-${APP_DOMAIN}"
+
       TOUCHSTONE_POOL_URL: "https://app.nasselle.com/demo/api/demos"
       TOUCHSTONE_BOARD_URL: "https://app.nasselle.com/demo/admin/manage"
     volumes:
@@ -189,6 +195,34 @@ services:
       LISTEN_PORT: "80"
       OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
       REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
+
+      # The conformance board, served without a login. Every operator page starts runs, arms
+      # the loop or edits the rubric and stays behind the gate; `/public` is the read-only
+      # view an app author is sent to, and publishing it is the entire reason that namespace
+      # exists (ARCHITECTURE §8.1). Two properties make writing this line safe rather than a
+      # judgement about forty handlers: `routes/public.ts` registers an `onRoute` hook that
+      # throws at boot on any verb but GET/HEAD, so the prefix cannot grow a write route; and
+      # the pages under it are a separate layout tree whose only three client calls are the
+      # three `/api/v1/public/*` endpoints, so a public page cannot quietly read the operator
+      # API. It composes nothing of its own either — `hallmarks()` and `buildFixReport()` are
+      # the same functions the operator pages read.
+      #
+      # AppShield turns this into nginx `location ~ ^/(public|api/v1/public|assets)(/|$)`, so
+      # each entry covers the prefix and everything under it. **`assets` is load-bearing and
+      # is not a third public surface**: the SPA's index.html references `/assets/index-*.js`
+      # and `/assets/index-*.css` by absolute path, which are outside `/public`. Without it an
+      # anonymous visitor gets the HTML shell, the bundle request meets the OIDC redirect, and
+      # the board renders as a blank page. What it exposes is the compiled bundle both frames
+      # share — no data, and every operator call it can make is still gated.
+      # `api/v1/trialstore` is the fourth, and it is not a page: it is the store zip a demo
+      # instance fetches when a trial audits files that are on no branch. The bench is on the
+      # public internet and holds no credential of ours, so the unguessable per-trial token in
+      # the path is the guard. It is served `application/zip` + `attachment` + `no-store`,
+      # because this origin also serves the SSO-gated operator UI and uploaded bytes must never
+      # render there. The backend also sets `nosniff`, but measured 2026-08-22 that header does
+      # not survive the AppShield → Caddy → Cloudflare chain — the content type and the
+      # disposition do, and either alone is enough, so do not count on three.
+      ALLOWED_PATHS: "public,api/v1/public,assets,api/v1/trialstore"
     depends_on:
       - touchstone-backend
     networks:
