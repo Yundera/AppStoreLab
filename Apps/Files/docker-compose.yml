@@ -1,0 +1,218 @@
+name: files
+
+services:
+  # AppShield SSO gate — the only publicly reachable service.
+  #
+  # Files has no authentication of its own and never will: the whole scope
+  # decision was that the gate IS the auth system (see the app's README). Unlike
+  # the FileBrowser app this replaces, there is nothing to exempt — no anonymous
+  # share links — so ALLOWED_PATHS carries only the health endpoint.
+  files:
+    image: ghcr.io/yundera/appshield:3.0.2
+    container_name: files
+    # OIDC identity: the AppShield auth-service builds its OIDC redirect URIs from
+    # os.hostname(), and the auth-registrar independently attests this app's name via
+    # the container's PTR record, rejecting any redirect URI that doesn't match. Must
+    # equal the app name, or Docker defaults the hostname to the random container ID
+    # and OIDC registration fails.
+    hostname: files
+    restart: unless-stopped
+    environment:
+      BACKEND_HOST: "files-backend"
+      BACKEND_PORT: "8080"
+      LISTEN_PORT: "80"
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      REDIRECT_HOST_SUFFIXES: "${APP_DOMAIN},${APP_PUBLIC_IP_DASH}.nip.io,${APP_PUBLIC_IP_DASH}.sslip.io"
+      # The orchestrator polls this before declaring the PCS ready, and it is the
+      # one route that must answer without a session. Nothing else is exempt.
+      ALLOWED_PATHS: "api/health"
+      # This is a file manager: uploads are the point, and they pass through the
+      # gate. 0 = unlimited. Uploads are chunked (tus, 8 MiB chunks), so even a
+      # generous limit would cap them — this must stay 0.
+      CLIENT_MAX_BODY_SIZE: "0"
+    expose:
+      - 80
+    labels:
+      caddy_0: files-${APP_DOMAIN}
+      caddy_0.import: gateway_tls
+      caddy_0.reverse_proxy: "{{upstreams 80}}"
+      caddy_1: files-${APP_PUBLIC_IP_DASH}.nip.io
+      caddy_1.import: gateway_tls
+      caddy_1.reverse_proxy: "{{upstreams 80}}"
+      caddy_2: files-${APP_PUBLIC_IP_DASH}.sslip.io
+      caddy_2.reverse_proxy: "{{upstreams 80}}"
+    depends_on:
+      - files-backend
+    networks:
+      # On `pcs` because Caddy and auth-registrar must reach it, and on the app's
+      # own network because that is where its backend lives.
+      - pcs
+      - files-internal
+    cpu_shares: 80
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  files-backend:
+    container_name: files-backend
+    image: ghcr.io/yundera/files:1.0.0
+    restart: unless-stopped
+    environment:
+      DATA_ROOT: "/DATA"
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+      # Everything the app creates is owned by PUID:PGID with these modes.
+      # Group-writable on purpose: it is what lets a container running as another
+      # uid in the same group write to a file uploaded here.
+      DIR_MODE: "0775"
+      FILE_MODE: "0664"
+      # Deleted files go to a trash folder inside this app's own data directory
+      # and are purged after this many days. 0 disables the automatic purge.
+      TRASH_RETENTION_DAYS: "30"
+      THUMB_CACHE_MB: "512"
+    # Runs as ROOT, deliberately, and this is the load-bearing line.
+    #
+    # A file manager over /DATA has to read /DATA/AppData, and app data
+    # directories are routinely owned by other uids with mode 0700 (a database
+    # container writing as its own user). As PUID those are unreadable, so a
+    # large part of the tree this app exists to manage would show as empty. The
+    # app chowns everything it CREATES back to PUID:PGID, so the files a user
+    # makes here still belong to them.
+    #
+    # Capabilities are not a middle ground: Docker has no ambient capabilities,
+    # so `user: 1000` plus `cap_add: DAC_READ_SEARCH` grants a non-root process
+    # nothing. The blast radius is pulled in from the other side instead.
+    user: 0:0
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN          # stamp PUID:PGID onto created files
+      - FOWNER         # chmod files owned by another uid
+      - FSETID         # keep setgid bits on created directories
+      - DAC_OVERRIDE   # write into app data directories owned by others
+      - DAC_READ_SEARCH # read and traverse them
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      # The whole of /DATA: Documents, Downloads, Media and AppData. This is
+      # everything the app can browse, edit and delete, so anyone who passes the
+      # server login can reach all of it. The app's own state — trash, thumbnail
+      # cache, upload staging — lives in AppData/files and is hidden from the
+      # browser so a user cannot browse into their own trash.
+      - type: bind
+        source: ${DATA_ROOT:-/DATA}/
+        target: /DATA/
+    expose:
+      - 8080
+    # No Caddy labels and NOT on `pcs`. This container has no authentication of
+    # its own and runs as root over all of /DATA, so the gate must be the only
+    # path to it. `files-internal` is what enforces that — on `pcs`, any other
+    # app on the server could reach it directly and read or delete anything.
+    # DO NOT move this service onto `pcs`.
+    networks:
+      - files-internal
+    cpu_shares: 50
+    deploy:
+      resources:
+        limits:
+          # Higher than the gate because of the thumbnailer: it decodes up to 24
+          # megapixels at a time, two at a time, so peak decode memory is roughly
+          # 24e6 x 4 bytes x 2 = ~200 MB on top of the binary. Below ~384M this
+          # will OOM on a folder of full-size camera photos.
+          memory: 512M
+    x-casaos:
+      envs:
+        - container: PUID
+          description:
+            en_us: User ID owning the files this app creates. Defaults to your server user.
+        - container: PGID
+          description:
+            en_us: Group ID owning the files this app creates. Defaults to your server group.
+        - container: TZ
+          description:
+            en_us: Timezone used for the file timestamps shown in the interface.
+        - container: DIR_MODE
+          description:
+            en_us: Permissions for folders this app creates, octal. Group-writable by default.
+        - container: FILE_MODE
+          description:
+            en_us: Permissions for files this app creates, octal. Group-writable by default.
+        - container: TRASH_RETENTION_DAYS
+          description:
+            en_us: Days a deleted file stays in the trash before it is purged automatically. 0 keeps it forever.
+        - container: THUMB_CACHE_MB
+          description:
+            en_us: Size limit for the image thumbnail cache. Oldest thumbnails are dropped first.
+      volumes:
+        - container: /DATA/
+          description:
+            en_us: The whole of /DATA - Documents, Downloads, Media and AppData. This is everything the app can browse, edit and delete, so anyone who passes the server login can reach all of it.
+
+networks:
+  pcs:
+    name: ${APP_NET:-pcs}
+    external: true
+  files-internal:
+    name: files-internal
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: files
+  author: Yundera Team
+  developer: Yundera
+  category: Cloud
+  tags: ["files", "personal"]
+  port_map: "80"
+  scheme: http
+  webui_port: 80
+  index: /
+  title:
+    en_us: Files
+  tagline:
+    en_us: Your files, in your browser. Browse, edit and upload without leaving the page.
+  description:
+    en_us: |
+      📁 **What is Files?**
+
+      **Files** is the file manager for your Personal Cloud Server. It gives you
+      everything under `/DATA` — Documents, Downloads, Media and your app data —
+      in one browser window that looks and works like the rest of your server.
+
+      ✅ **What you can do**
+      • Browse in a grid or a list, with image thumbnails
+      • Upload files *and whole folders* by dragging them in — uploads resume if your connection drops
+      • Create, rename, copy, move and delete
+      • Edit text, YAML and Markdown in place, with a live Markdown preview
+      • Preview images, video, audio and PDFs without downloading them
+      • Search by name inside any folder
+
+      🗑️ **Deleting is not permanent.** Files you delete move to a Trash you can
+      see, restore from, and empty yourself. They are cleared automatically after
+      30 days.
+
+      🔒 **Signed in already.** Files has no separate login — it uses your server
+      account, like the rest of your PCS. There is no sharing and no second set of
+      users to manage.
+
+      ⚠️ **It can see everything.** That includes the data folders of your other
+      apps. Deleting an app's database here will break that app, so take the same
+      care you would in a terminal.
+  tips:
+    before_install:
+      en_us: |
+        Files replaces FileBrowser, whose upstream was archived in September 2026.
+
+        The two can be installed side by side — Files keeps no state FileBrowser
+        uses, and nothing is migrated or removed. If you were using FileBrowser's
+        share links, note that Files has no sharing: those links have no
+        equivalent here and will stop working when you uninstall FileBrowser.
+  icon: https://cdn.jsdelivr.net/gh/Yundera/AppStoreLab@main/Apps/Files/icon.png
+  thumbnail: ""
+  screenshot_link: []
