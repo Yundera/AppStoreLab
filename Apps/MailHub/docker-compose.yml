@@ -44,7 +44,7 @@ services:
       - mailhub-internal
 
   mailhub-webmail:
-    image: ghcr.io/worph/mailhub-roundcube:0.2.0
+    image: ghcr.io/worph/mailhub-roundcube:0.3.0
     container_name: mailhub-webmail
     restart: unless-stopped
     cpu_shares: 80
@@ -65,7 +65,7 @@ services:
       # each address's identity + SMTP.
       ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,identity_smtp,mailhub_dav,mailhub_accounts
       ROUNDCUBEMAIL_DES_KEY: "${MAILHUB_DES_KEY}"
-      ROUNDCUBEMAIL_SKIN: elastic
+      ROUNDCUBEMAIL_SKIN: workbench
       ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: 25M
       MAILHUB_DAV_DEBUG: "${MAILHUB_DAV_DEBUG:-}"
       TZ: Etc/UTC
@@ -118,7 +118,7 @@ services:
       - mailhub-internal
 
   mailhub-fetch:
-    image: ghcr.io/worph/mailhub-getmail:0.2.0
+    image: ghcr.io/worph/mailhub-getmail:0.3.0
     container_name: mailhub-fetch
     restart: unless-stopped
     cpu_shares: 30
@@ -164,7 +164,7 @@ services:
   # MAILHUB_MCP_WRITE=true; even then it only saves drafts, never sends.
   # App-private network only — Beacon reaches it through mailhub-beacon.
   mailhub-mcp:
-    image: ghcr.io/worph/mailhub-mcp:0.2.0
+    image: ghcr.io/worph/mailhub-mcp:0.3.0
     container_name: mailhub-mcp
     restart: unless-stopped
     cpu_shares: 30
@@ -358,13 +358,21 @@ x-compose-app:
     # would leave tls/ empty: Dovecot would not start, and the webmail with it. A
     # self-signed pair keeps everything but trusted IMAPS working. On 1.1.92+ the
     # certificate is already written before steps run, so this does nothing.
+    # dovecot/mailhub.conf is re-rendered on every up (files, ensure: always) but
+    # bind-mounted, so an update that changes it does not recreate the container:
+    # reload it so the running server applies it (open connections stay up).
+    - name: dovecot-reload
+      at: started
+      run: always
+      script: |
+        compose exec mailhub-imap doveadm reload
     - name: tls-fallback
       at: setup
       run: always
-      images: [ghcr.io/worph/mailhub-roundcube:0.2.0]
+      images: [ghcr.io/worph/mailhub-roundcube:0.3.0]
       script: |
         docker run --rm --network none --entrypoint sh -v "$APP_DIR/tls:/tls" \
-          ghcr.io/worph/mailhub-roundcube:0.2.0 -c '
+          ghcr.io/worph/mailhub-roundcube:0.3.0 -c '
             [ -s /tls/cert.pem ] && [ -s /tls/key.pem ] && exit 0
             openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 365 \
               -subj "/CN=mailhub (self-signed)" -keyout /tls/key.pem -out /tls/cert.pem 2>/dev/null
@@ -410,7 +418,8 @@ x-compose-app:
       Private Email, or another one), enter the address and an app password. MailHub
       tests the login, starts fetching within a minute, and sets up the address so
       your replies leave through that provider. Leave *Delete from the provider* off
-      until your backups cover the app.
+      until your backups cover the app. To keep an address apart, like a separate
+      inbox, give it a *Folder* (e.g. `Contact`): its new mail is filed there.
 
       **Calendar and contacts** are built in — nothing to set up. To keep them on
       another CalDAV/CardDAV server (Nextcloud…), Webmail → Settings → *Calendar &
@@ -449,6 +458,8 @@ x-compose-app:
       d'application. MailHub teste la connexion, commence la relève dans la minute et
       configure l'adresse pour que vos réponses partent via ce fournisseur. Laissez
       *Supprimer chez le fournisseur* désactivé tant que vos sauvegardes ne couvrent pas l'app.
+      Pour garder une adresse à part, comme une boîte séparée, donnez-lui un *Dossier*
+      (ex. `Contact`) : son nouveau courrier y est rangé.
 
       **L'agenda et les contacts** sont intégrés — rien à configurer. Pour les garder
       sur un autre serveur CalDAV/CardDAV (Nextcloud…), Webmail → Paramètres →

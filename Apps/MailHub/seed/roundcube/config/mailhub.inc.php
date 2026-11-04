@@ -2,7 +2,9 @@
 // MailHub: Roundcube settings beyond what the image's env vars cover.
 
 $config['product_name'] = 'MailHub';
-$config['skin'] = 'elastic';
+// Workbench (community skin, extends Elastic, light + dark); Elastic and
+// Elastic2022 are also installed and can be picked in Settings → User interface.
+$config['skin'] = 'workbench';
 
 // Single-user box: the IMAP login is the unified Dovecot mailbox.
 $config['username_domain'] = '';
@@ -10,6 +12,10 @@ $config['login_autocomplete'] = 2;
 
 // Sent mail is kept in the unified mailbox; providers keep their own copy too.
 $config['sent_mbox'] = 'Sent';
+
+// Accounts can deliver into their own folder (Settings → Mail accounts → Folder):
+// show unread counts on every folder, not only the Inbox.
+$config['check_all_folders'] = true;
 
 // --- Per-identity SMTP (identity_smtp) ----------------------------------------
 // Each identity sends through its provider's SMTP. The global smtp_host is only
