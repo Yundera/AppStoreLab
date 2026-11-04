@@ -354,6 +354,22 @@ x-compose-app:
           -v "$APP_DIR/baikal/config:/var/www/baikal/config" \
           -v "$APP_DIR/baikal/data:/var/www/baikal/Specific" \
           ckulka/baikal:0.10.1-nginx /init/init.php
+    # Safety net for a Maison older than 1.1.92, which ignores `certificates` and
+    # would leave tls/ empty: Dovecot would not start, and the webmail with it. A
+    # self-signed pair keeps everything but trusted IMAPS working. On 1.1.92+ the
+    # certificate is already written before steps run, so this does nothing.
+    - name: tls-fallback
+      at: setup
+      run: always
+      images: [ghcr.io/worph/mailhub-roundcube:0.2.0]
+      script: |
+        docker run --rm --network none --entrypoint sh -v "$APP_DIR/tls:/tls" \
+          ghcr.io/worph/mailhub-roundcube:0.2.0 -c '
+            [ -s /tls/cert.pem ] && [ -s /tls/key.pem ] && exit 0
+            openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes -days 365 \
+              -subj "/CN=mailhub (self-signed)" -keyout /tls/key.pem -out /tls/cert.pem 2>/dev/null
+            chown 1000:1000 /tls/cert.pem /tls/key.pem
+            chmod 600 /tls/key.pem && chmod 644 /tls/cert.pem'
   credentials:
     - label:
         en_us: Mailbox (webmail, IMAPS, calendar & contacts)
