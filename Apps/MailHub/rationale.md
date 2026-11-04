@@ -20,7 +20,7 @@
 - The DAV route serves `/dav.php` only (`seed/baikal/nginx.conf`): Baïkal's admin console and
   welcome page return 404. The admin account's password is a separate random secret that is never
   shown, and nothing needs it — the `baikal-init` step configures the server.
-- IMAPS only (TLS on 993, with the Let's Encrypt certificate of the app's `mailhub-<ip>.sslip.io` route); plain IMAP (143) and the
+- IMAPS only (TLS on 993, with a certificate Maison provides for the best host of the `mailhub` route — `certificates`, needs a Maison with that feature); plain IMAP (143) and the
   LMTP port used by the fetcher are not published.
 
 ## Alternatives considered
