@@ -87,14 +87,17 @@ services:
 
   mailhub-imap:
     image: dovecot/dovecot:2.4.5
+    # Root for the master only, which reads the TLS certificate: Caddy stores it as
+    # root 0600. Mail is still read and written as vmail (uid 1000).
+    user: "0:0"
     container_name: mailhub-imap
     restart: unless-stopped
     cpu_shares: 70
     logging: *logging
     environment:
       USER_PASSWORD: "${MAILHUB_PASSWORD}"
-      MAILHUB_TLS_CERT: /certs/wildcard_.${APP_DOMAIN}.crt
-      MAILHUB_TLS_KEY: /certs/wildcard_.${APP_DOMAIN}.key
+      MAILHUB_TLS_CERT: /certs/mailhub-${APP_PUBLIC_IP_DASH}.sslip.io.crt
+      MAILHUB_TLS_KEY: /certs/mailhub-${APP_PUBLIC_IP_DASH}.sslip.io.key
       TZ: Etc/UTC
     ports:
       # IMAPS for phones and desktop clients (Thunderbird, iOS Mail, K-9).
@@ -106,10 +109,13 @@ services:
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/mail:/srv/vmail
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/dovecot/mailhub.conf:/etc/dovecot/conf.d/zz-mailhub.conf:ro
-      # The box's wildcard certificate (*.<domain>, Let's Encrypt, full chain) from
-      # the platform Caddy's storage — valid for mailhub.<domain>, the IMAPS name.
+      # The Let's Encrypt certificate the platform Caddy gets for the app's sslip.io
+      # route, mailhub-<ip>.sslip.io, which is also the IMAPS name. Not the
+      # <domain> wildcard: it only exists once the box's zone is delegated, and
+      # until then <app>.<domain> resolves to the gateway, not to this box.
+      # On a fresh install Dovecot restarts until Caddy has issued it (~1 min).
       # A directory mount, so a renewal (new file) is visible after a reload.
-      - ${DATA_ROOT:-/DATA}/AppData/mesh/data/caddy/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/wildcard_.${APP_DOMAIN}:/certs:ro
+      - ${DATA_ROOT:-/DATA}/AppData/mesh/data/caddy/data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mailhub-${APP_PUBLIC_IP_DASH}.sslip.io:/certs:ro
     deploy:
       resources:
         limits:
@@ -369,14 +375,16 @@ x-compose-app:
 
       | | |
       | --- | --- |
-      | IMAP server | `mailhub.${APP_DOMAIN}`, port 993, SSL/TLS |
+      | IMAP server | `mailhub-${APP_PUBLIC_IP_DASH}.sslip.io`, port 993, SSL/TLS |
       | IMAP user | `admin` + the mailbox password |
-      | Calendar & contacts (CalDAV / CardDAV) | `https://mailhubdav.${APP_DOMAIN}/dav.php`, same login |
+      | Calendar & contacts (CalDAV / CardDAV) | `https://mailhubdav-${APP_PUBLIC_IP_DASH}.sslip.io/dav.php`, same login |
       | Sending (SMTP) | your provider's own SMTP for each address |
+
+      These addresses contain your server's IP: if it ever changes, update them on your devices.
 
       Android: DAVx⁵ → *Login with URL and user name*. iPhone: Settings → Calendar →
       Accounts → Other → *Add CalDAV Account* (and CardDAV under Contacts), server
-      `mailhubdav.${APP_DOMAIN}`.
+      `mailhubdav-${APP_PUBLIC_IP_DASH}.sslip.io`.
 
       **Adding your mail accounts**
       Webmail → Settings → *Mail accounts*: pick the provider (Gmail, Namecheap
@@ -404,14 +412,16 @@ x-compose-app:
 
       | | |
       | --- | --- |
-      | Serveur IMAP | `mailhub.${APP_DOMAIN}`, port 993, SSL/TLS |
+      | Serveur IMAP | `mailhub-${APP_PUBLIC_IP_DASH}.sslip.io`, port 993, SSL/TLS |
       | Utilisateur IMAP | `admin` + le mot de passe de la boîte |
-      | Agenda et contacts (CalDAV / CardDAV) | `https://mailhubdav.${APP_DOMAIN}/dav.php`, même identifiant |
+      | Agenda et contacts (CalDAV / CardDAV) | `https://mailhubdav-${APP_PUBLIC_IP_DASH}.sslip.io/dav.php`, même identifiant |
       | Envoi (SMTP) | le SMTP de chaque fournisseur |
+
+      Ces adresses contiennent l'IP de votre serveur : si elle change, mettez-les à jour sur vos appareils.
 
       Android : DAVx⁵ → *Connexion avec URL et nom d'utilisateur*. iPhone : Réglages →
       Calendrier → Comptes → Autre → *Ajouter un compte CalDAV* (et CardDAV dans
-      Contacts), serveur `mailhubdav.${APP_DOMAIN}`.
+      Contacts), serveur `mailhubdav-${APP_PUBLIC_IP_DASH}.sslip.io`.
 
       **Ajouter vos comptes mail**
       Webmail → Paramètres → *Comptes mail* : choisissez le fournisseur (Gmail,
@@ -465,5 +475,5 @@ x-casaos:
     before_install:
       en_us: |
         The mailbox login (webmail, IMAPS, calendar & contacts) is shown under Credentials.
-        Phones: IMAP mailhub.<your domain>:993, CalDAV/CardDAV https://mailhubdav.<your domain>/dav.php.
+        Phones: IMAP mailhub-<your server's IP>.sslip.io:993, CalDAV/CardDAV https://mailhubdav-<your server's IP>.sslip.io/dav.php (shown in the tips after install).
         Add the accounts to fetch in the webmail: Settings → Mail accounts.
