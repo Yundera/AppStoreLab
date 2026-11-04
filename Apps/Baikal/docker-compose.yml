@@ -1,0 +1,194 @@
+name: baikal
+# Baïkal — a lightweight CalDAV (calendars, tasks) and CardDAV (contacts) server.
+# Phones, Thunderbird and MailHub's webmail connect to it with the account shown
+# under Credentials. See rationale.md for why there is no AppShield in front.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  baikal:
+    image: ckulka/baikal:0.10.1-nginx
+    container_name: baikal
+    restart: unless-stopped
+    cpu_shares: 50
+    logging: *logging
+    expose:
+      - 80
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/config:/var/www/baikal/config
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/data:/var/www/baikal/Specific
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    networks:
+      - pcs
+
+networks:
+  pcs:
+    name: ${APP_NET:-pcs}
+    external: true
+
+x-compose-app:
+  schema_version: 2
+  version: "0.10.1"
+  # The web UI is Baïkal's admin console (/admin/); DAV clients use /dav.php on
+  # the same host.
+  routes:
+    - { service: baikal, name: baikal, upstream-port: 80, path: /admin/ }
+  id: baikal
+  title:
+    en_us: Baïkal
+  tagline:
+    en_us: Your calendars and contacts, synced to every device (CalDAV / CardDAV).
+    fr_fr: Vos agendas et contacts, synchronisés sur tous vos appareils (CalDAV / CardDAV).
+  description:
+    en_us: |
+      Baïkal is a lightweight calendar and contacts server. It speaks the open
+      CalDAV and CardDAV standards, so your phone, your computer and your webmail
+      all share the same calendars, tasks and address book.
+
+      **Works with**
+      • Android (DAVx⁵), iPhone and iPad (built in), macOS, Thunderbird
+      • MailHub's webmail: calendar, invitation buttons and contacts
+      • Any other CalDAV / CardDAV client
+
+      One account with a calendar and an address book is ready at install; add more
+      users, calendars and address books from the admin console.
+    fr_fr: |
+      Baïkal est un serveur léger d'agendas et de contacts. Il parle les standards
+      ouverts CalDAV et CardDAV : téléphone, ordinateur et webmail partagent les mêmes
+      agendas, tâches et carnet d'adresses.
+
+      **Fonctionne avec**
+      • Android (DAVx⁵), iPhone et iPad (intégré), macOS, Thunderbird
+      • Le webmail de MailHub : agenda, boutons d'invitation et contacts
+      • Tout autre client CalDAV / CardDAV
+
+      Un compte avec un agenda et un carnet d'adresses est prêt à l'installation ;
+      ajoutez utilisateurs, agendas et carnets depuis la console d'administration.
+  developer: sabre.io
+  category: Cloud
+  icon: icon.png
+  screenshots:
+    - screenshot-1.png
+  architectures:
+    - amd64
+    - arm64
+  secrets:
+    BAIKAL_ADMIN_PASSWORD: password:24   # the admin console
+    BAIKAL_USER_PASSWORD: password:24    # the calendar/contacts account, typed into clients
+  folders:
+    - path: /DATA/AppData/$AppID/config
+      user: "0"
+      group: "0"
+    - path: /DATA/AppData/$AppID/data
+      user: "0"
+      group: "0"
+  steps:
+    # Writes Baïkal's config and DB (one user, one calendar, one address book) on
+    # the first up so the install wizard never shows; every later up re-syncs both
+    # passwords from the secrets above, so a credential change takes effect.
+    - name: init
+      at: setup
+      run: always
+      images: [ckulka/baikal:0.10.1-nginx]
+      script: |
+        docker run --rm --network none --entrypoint php \
+          -e BAIKAL_USER=me -e BAIKAL_USER_PASSWORD -e BAIKAL_ADMIN_PASSWORD \
+          -v "$APP_DIR/.scripts/baikal-init.php:/init/init.php:ro" \
+          -v "$APP_DIR/config:/var/www/baikal/config" \
+          -v "$APP_DIR/data:/var/www/baikal/Specific" \
+          ckulka/baikal:0.10.1-nginx /init/init.php
+  credentials:
+    - label:
+        en_us: Calendar & contacts account (for your devices and MailHub)
+        fr_fr: Compte agenda et contacts (pour vos appareils et MailHub)
+      username: me
+      password: ${BAIKAL_USER_PASSWORD}
+      note:
+        en_us: "Server URL: ${APP_URL:-https://baikal-${APP_DOMAIN}}/dav.php"
+        fr_fr: "URL du serveur : ${APP_URL:-https://baikal-${APP_DOMAIN}}/dav.php"
+      change:
+        apply: env
+    - label:
+        en_us: Admin console
+        fr_fr: Console d'administration
+      username: admin
+      password: ${BAIKAL_ADMIN_PASSWORD}
+      change:
+        apply: env
+  tips:
+    en_us: |
+      **Server URL:** `${APP_URL:-https://baikal-${APP_DOMAIN}}/dav.php`
+      **Account:** `me` + the password under *Credentials*.
+
+      **MailHub (webmail)**
+      Webmail → Settings → *Calendar & contacts*: `https://baikal.${APP_DOMAIN}/dav.php`
+      (the box's direct address — the gateway one above refuses the webmail's calendar
+      client), `me` and the password, then Save. The calendar, the invitation buttons (Accept / Maybe /
+      Decline) and your contacts appear in the webmail.
+
+      **Android:** install DAVx⁵ → Add account → *Login with URL and user name* →
+      the server URL, `me`, the password.
+      **iPhone / iPad:** Settings → Calendar → Accounts → Add Account → Other →
+      *Add CalDAV Account* (and *Add CardDAV Account* under Contacts): server
+      `baikal-${APP_DOMAIN}`, user `me`, the password.
+      **Thunderbird:** New Calendar → On the Network → the server URL, `me`.
+
+      **Admin console** (this app's page): add users, calendars and address books.
+      It has its own login, `admin`, under *Credentials*.
+    fr_fr: |
+      **URL du serveur :** `${APP_URL:-https://baikal-${APP_DOMAIN}}/dav.php`
+      **Compte :** `me` + le mot de passe sous *Identifiants*.
+
+      **MailHub (webmail)**
+      Webmail → Paramètres → *Agenda et contacts* : `https://baikal.${APP_DOMAIN}/dav.php`
+      (l'adresse directe du serveur — celle de la passerelle ci-dessus refuse le client
+      agenda du webmail), `me` et le mot de passe, puis Enregistrer. L'agenda, les boutons d'invitation
+      (Accepter / Peut-être / Refuser) et vos contacts apparaissent dans le webmail.
+
+      **Android :** installez DAVx⁵ → Ajouter un compte → *Connexion avec URL et nom
+      d'utilisateur* → l'URL du serveur, `me`, le mot de passe.
+      **iPhone / iPad :** Réglages → Calendrier → Comptes → Ajouter un compte → Autre →
+      *Ajouter un compte CalDAV* (et *CardDAV* dans Contacts) : serveur
+      `baikal-${APP_DOMAIN}`, utilisateur `me`, le mot de passe.
+      **Thunderbird :** Nouvel agenda → Sur le réseau → l'URL du serveur, `me`.
+
+      **Console d'administration** (la page de l'app) : ajoutez utilisateurs, agendas
+      et carnets. Elle a son propre identifiant, `admin`, sous *Identifiants*.
+
+x-casaos:
+  store_app_id: baikal
+  architectures:
+    - amd64
+    - arm64
+  main: baikal
+  webui_port: 80
+  index: /admin/
+  category: Cloud
+  tags: ["calendar", "contacts", "productivity"]
+  developer: sabre.io
+  icon: icon.png
+  screenshot_link:
+    - screenshot-1.png
+  title:
+    en_us: Baïkal
+  tagline:
+    en_us: Your calendars and contacts, synced to every device (CalDAV / CardDAV).
+    fr_fr: Vos agendas et contacts, synchronisés sur tous vos appareils (CalDAV / CardDAV).
+  description:
+    en_us: |
+      Baïkal is a lightweight CalDAV / CardDAV server: your phone, computer and webmail
+      (MailHub) share the same calendars, tasks and contacts.
+    fr_fr: |
+      Baïkal est un serveur CalDAV / CardDAV léger : téléphone, ordinateur et webmail
+      (MailHub) partagent les mêmes agendas, tâches et contacts.
+  tips:
+    before_install:
+      en_us: |
+        Server URL: https://baikal-<your domain>/dav.php — account `me`, password under Credentials.
