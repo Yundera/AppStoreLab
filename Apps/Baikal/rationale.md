@@ -7,7 +7,7 @@ No AppShield in front of the app (`auth-default` is met by the app's own logins 
 ## Why it is necessary
 
 Baïkal's job is to be reached by CalDAV / CardDAV clients: DAVx⁵ on Android, the
-iOS and macOS calendar and contacts, Thunderbird, and MailHub's webmail (Kolab
+iOS and macOS calendar and contacts, Thunderbird, and webmail calendar plugins (e.g. Roundcube's Kolab
 plugins). Every one of them authenticates with HTTP Basic auth on each request and
 cannot follow an OIDC login, so an SSO gate in front of `/dav.php` would lock them
 all out.
