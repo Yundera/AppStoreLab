@@ -476,7 +476,7 @@ x-compose-app:
       tests the login, starts fetching within a minute, and sets up the address so
       your replies leave through that provider. MailHub only reads over IMAP and never
       deletes anything at the provider. Each address gets its own folder, named
-      after it (Outlook-style); empty its *Folder* to use the Inbox instead.
+      after it (Outlook-style).
 
       **Calendar and contacts** are built in — nothing to set up. To keep them on
       another CalDAV/CardDAV server (Nextcloud…), Webmail → Settings → *Calendar &
@@ -515,8 +515,7 @@ x-compose-app:
       d'application. MailHub teste la connexion, commence la relève dans la minute et
       configure l'adresse pour que vos réponses partent via ce fournisseur. MailHub lit
       uniquement en IMAP et ne supprime jamais rien chez le fournisseur.
-      Chaque adresse a son propre dossier, à son nom (comme Outlook) ; videz son
-      *Dossier* pour utiliser la boîte de réception.
+      Chaque adresse a son propre dossier, à son nom (comme Outlook).
 
       **L'agenda et les contacts** sont intégrés — rien à configurer. Pour les garder
       sur un autre serveur CalDAV/CardDAV (Nextcloud…), Webmail → Paramètres →
