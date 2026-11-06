@@ -2,9 +2,10 @@
 // MailHub: Roundcube settings beyond what the image's env vars cover.
 
 $config['product_name'] = 'MailHub';
-// Workbench (community skin, extends Elastic, light + dark); Elastic and
-// Elastic2022 are also installed and can be picked in Settings → User interface.
-$config['skin'] = 'workbench';
+// Elastic2022 (community skin, light + dark). Ten others are installed and can be
+// picked in Settings → User interface: Elastic, Workbench, Elastic2025, Stretched
+// Elastic, Outlook, Air, Air Blue, Elastic Google, hellomail, Accessibility.
+$config['skin'] = 'elastic2022';
 
 // Single-user box: the IMAP login is the unified Dovecot mailbox.
 $config['username_domain'] = '';
