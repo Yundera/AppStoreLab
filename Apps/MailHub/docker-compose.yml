@@ -286,7 +286,8 @@ x-compose-app:
       any IMAP provider — into one inbox on your server, and answers from the right address.
 
       **What it does**
-      • Fetches every account over IMAP into one mailbox (optionally emptying the source)
+      • Fetches every account over IMAP (IMAP only, never POP) into one mailbox; the
+        provider keeps its copy
       • Webmail (Roundcube) on any device, behind your server's single sign-on
       • Each address sends through its own provider's SMTP, so SPF and DMARC stay valid
       • IMAPS for Thunderbird and phone mail apps
@@ -307,7 +308,8 @@ x-compose-app:
       depuis la bonne adresse.
 
       **Ce qu'il fait**
-      • Relève chaque compte en IMAP dans une boîte unique (et peut vider la source)
+      • Relève chaque compte en IMAP (uniquement IMAP, jamais POP) dans une boîte unique ;
+        le fournisseur garde sa copie
       • Webmail (Roundcube) sur tous vos appareils, derrière la connexion unique du serveur
       • Chaque adresse envoie par le SMTP de son fournisseur : SPF et DMARC restent valides
       • IMAPS pour Thunderbird et les applis mail du téléphone
@@ -472,8 +474,8 @@ x-compose-app:
       Webmail → Settings → *Mail accounts*: pick the provider (Gmail, Namecheap
       Private Email, or another one), enter the address and an app password. MailHub
       tests the login, starts fetching within a minute, and sets up the address so
-      your replies leave through that provider. Leave *Delete from the provider* off
-      until your backups cover the app. Each address gets its own folder, named
+      your replies leave through that provider. MailHub only reads over IMAP and never
+      deletes anything at the provider. Each address gets its own folder, named
       after it (Outlook-style); empty its *Folder* to use the Inbox instead.
 
       **Calendar and contacts** are built in — nothing to set up. To keep them on
@@ -511,8 +513,8 @@ x-compose-app:
       Webmail → Paramètres → *Comptes mail* : choisissez le fournisseur (Gmail,
       Namecheap Private Email ou un autre), saisissez l'adresse et un mot de passe
       d'application. MailHub teste la connexion, commence la relève dans la minute et
-      configure l'adresse pour que vos réponses partent via ce fournisseur. Laissez
-      *Supprimer chez le fournisseur* désactivé tant que vos sauvegardes ne couvrent pas l'app.
+      configure l'adresse pour que vos réponses partent via ce fournisseur. MailHub lit
+      uniquement en IMAP et ne supprime jamais rien chez le fournisseur.
       Chaque adresse a son propre dossier, à son nom (comme Outlook) ; videz son
       *Dossier* pour utiliser la boîte de réception.
 

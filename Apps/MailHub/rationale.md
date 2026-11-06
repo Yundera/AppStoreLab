@@ -33,9 +33,9 @@
 ## Data protection
 
 Mail (`mail/`), the calendar & contacts DB (`baikal/data/`) and Roundcube's DB are all in the app
-folder, so they are part of Maison's backup of the app. With source deletion on, this folder is
-the only copy of fetched mail: keep backups on before turning on *Delete from the provider*
-(Settings → Mail accounts, off by default).
+folder, so they are part of Maison's backup of the app. Mail is read over IMAP only and never
+deleted at the provider (the fetch loop runs getmail with `--dont-delete`), so the provider
+always keeps its own copy.
 
 The providers' app passwords are in plain text in `getmail/accounts/` (getmail reads them from its
 config files), in a `0700` folder owned by the webmail's user, and encrypted with the app's DES key in
