@@ -20,8 +20,8 @@
 - The DAV route serves `/dav.php` only (`seed/baikal/nginx.conf`): Baïkal's admin console and
   welcome page return 404. The admin account's password is a separate random secret that is never
   shown, and nothing needs it — the `baikal-init` step configures the server.
-- IMAPS only (TLS on 993, with a certificate Maison provides for the best host of the `mailhub` route — `certificates`, needs a Maison with that feature); plain IMAP (143) and the
-  LMTP port used by the fetcher are not published.
+- IMAPS only (TLS on 993, with a certificate Maison provides for the best host of the `mailhub` route — `certificates`, needs a Maison with that feature); plain IMAP (143) and LMTP
+  are not published.
 
 ## Alternatives considered
 
@@ -33,11 +33,14 @@
 ## Data protection
 
 Mail (`mail/`), the calendar & contacts DB (`baikal/data/`) and Roundcube's DB are all in the app
-folder, so they are part of Maison's backup of the app. Mail is read over IMAP only and never
-deleted at the provider (the fetch loop runs getmail with `--dont-delete`), so the provider
-always keeps its own copy.
+folder, so they are part of Maison's backup of the app. `mail/live/` is a copy of each provider
+mailbox: the provider stays the source of truth. The copy is pulled with mbsync in pull-only mode
+(nothing in that direction writes to the provider); what the user does in those folders reaches
+the provider only as the same IMAP command, replayed from Dovecot's record of it. Nothing is ever
+inferred from a difference between the two sides, so a lost or emptied local copy never deletes
+anything at the provider: it is simply copied again. Removing an account deletes only the local copy.
 
-The providers' app passwords are in plain text in `getmail/accounts/` (getmail reads them from its
-config files), in a `0700` folder owned by the webmail's user, and encrypted with the app's DES key in
-Roundcube's DB. They are app passwords: each can be revoked at the provider without touching the
+The providers' app passwords are in plain text in `mirror/accounts/` (mailhub-mirror reads them
+from there), in a `0700` folder owned by the webmail's user, and encrypted with the app's DES key in
+Roundcube's DB. mailhub-mirror runs as root to read them; mbsync itself runs as the mailbox's user. They are app passwords: each can be revoked at the provider without touching the
 account's main password.

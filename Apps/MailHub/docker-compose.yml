@@ -1,12 +1,14 @@
 name: mailhub
 # MailHub — one mailbox for the mail accounts you already have.
-# getmail6 fetches each provider over IMAP into a single Dovecot mailbox; Roundcube
-# reads it and sends every identity through its own provider's SMTP. Calendar and
+# mailhub-mirror keeps a copy of every provider mailbox in Dovecot (Live/<address>/,
+# IMAP, pull only) and replays what is done there at the provider, which stays the
+# source of truth; Virtual/ combines them. Roundcube reads it and sends every
+# identity through its own provider's SMTP. Calendar and
 # contacts live in a built-in Baïkal (CalDAV/CardDAV only, no admin console), shown
 # in Roundcube by the Kolab plugins and synced to phones; Settings can point them at
 # another CalDAV/CardDAV server instead.
 #
-# The mailhub-roundcube / -getmail / -mcp images are built from github.com/worph/mailhub,
+# The mailhub-roundcube / -mirror / -mcp images are built from github.com/worph/mailhub,
 # which also holds the spike's test kit and notes.
 
 x-logging: &logging
@@ -63,8 +65,8 @@ services:
       ROUNDCUBEMAIL_SMTP_PORT: "${MAILHUB_DEFAULT_SMTP_PORT:-587}"
       # mailhub_dav loads calendar + kolab_addressbook against the built-in Baïkal
       # (or another server set in Settings → Calendar & contacts).
-      # mailhub_accounts: Settings → Mail accounts, writes the getmail files and
-      # each address's identity + SMTP.
+      # mailhub_accounts: Settings → Mail accounts, writes the mirror's account
+      # files and each address's identity + SMTP.
       ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,identity_smtp,mailhub_dav,mailhub_accounts
       ROUNDCUBEMAIL_DES_KEY: "${MAILHUB_DES_KEY}"
       ROUNDCUBEMAIL_SKIN: elastic2022
@@ -74,9 +76,9 @@ services:
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/roundcube/db:/var/roundcube/db
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/roundcube/config:/var/roundcube/config:ro
-      # Settings → Mail accounts writes the fetched accounts and reads their status.
-      - ${DATA_ROOT:-/DATA}/AppData/$AppID/getmail/accounts:/var/mailhub/accounts
-      - ${DATA_ROOT:-/DATA}/AppData/$AppID/getmail/state:/var/mailhub/fetch:ro
+      # Settings → Mail accounts writes the mirrored accounts and reads their status.
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/mirror/accounts:/var/mailhub/accounts
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/mirror/state:/var/mailhub/mirror:ro
     # The login page: Apache + PHP + Roundcube answering. First start copies the
     # app and runs composer, hence the long start period.
     healthcheck:
@@ -112,10 +114,11 @@ services:
       - "993:31993"
     expose:
       - 31143
-      - 2424
     volumes:
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/mail:/srv/vmail
       - ${DATA_ROOT:-/DATA}/AppData/$AppID/dovecot/mailhub.conf:/etc/dovecot/conf.d/zz-mailhub.conf:ro
+      # Records each IMAP action for mailhub-mirror's replay (push_notification lua).
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/dovecot/mailhub-replay.lua:/etc/dovecot/mailhub-replay.lua:ro
       # IMAPS certificate, written by Maison (x-compose-app `certificates`) for the
       # best host of the mailhub route that reaches this box directly; its name is
       # APP_TLS_HOST. Self-signed until the box has one.
@@ -134,29 +137,37 @@ services:
     networks:
       - mailhub-internal
 
-  mailhub-fetch:
-    image: ghcr.io/worph/mailhub-getmail:0.4.0
-    container_name: mailhub-fetch
+  # Every provider mailbox as a local copy (mbsync, pull only: nothing in that
+  # direction writes to the provider), the IMAP actions done on it replayed at the
+  # provider as the same commands, and the Virtual/ views kept up to date.
+  # Root to read the webmail's private account files; mbsync runs as vmail (1000).
+  mailhub-mirror:
+    image: ghcr.io/worph/mailhub-mirror:0.4.0
+    container_name: mailhub-mirror
     restart: unless-stopped
     cpu_shares: 30
     logging: *logging
+    user: "0:0"
     environment:
-      FETCH_INTERVAL: "${MAILHUB_FETCH_INTERVAL:-300}"
+      MAILHUB_USER: admin
+      MAILHUB_PASSWORD: "${MAILHUB_PASSWORD}"   # to subscribe new folders over IMAP
+      MAILHUB_SYNC_INTERVAL: "${MAILHUB_SYNC_INTERVAL:-120}"
     volumes:
-      - ${DATA_ROOT:-/DATA}/AppData/$AppID/getmail/accounts:/config:ro
-      - ${DATA_ROOT:-/DATA}/AppData/$AppID/getmail/state:/state
-    # The fetch loop is alive: a run started or finished within FETCH_INTERVAL + 1 h
-    # (a provider failing is per-account status in Settings → Mail accounts).
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/mail:/srv/vmail
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/mirror/accounts:/accounts:ro
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/mirror/state:/state
+    # The main loop is alive (it touches .alive every few seconds; a provider
+    # failing is per-account status in Settings → Mail accounts).
     healthcheck:
-      test: ["CMD-SHELL", "find /state -maxdepth 1 \\( -name .last-run -o -name .run-start \\) -mmin -$$(( ($${FETCH_INTERVAL:-300} + 3600) / 60 )) | grep -q ."]
-      interval: 5m
+      test: ["CMD-SHELL", "find /state/.alive -mmin -2 | grep -q ."]
+      interval: 60s
       timeout: 10s
-      retries: 2
-      start_period: 60s
+      retries: 3
+      start_period: 30s
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: 256M
     depends_on:
       - mailhub-imap
     networks:
@@ -286,8 +297,11 @@ x-compose-app:
       any IMAP provider — into one inbox on your server, and answers from the right address.
 
       **What it does**
-      • Fetches every account over IMAP (IMAP only, never POP) into one mailbox; the
-        provider keeps its copy
+      • Keeps a copy of every mailbox on your server, all folders, over IMAP only: read,
+        move and delete as usual, and the same is done at the provider, which stays the
+        reference (nothing else is ever changed there)
+      • Combined views over every account: All inboxes, Unread, Flagged — fast, with
+        full-text search
       • Webmail (Roundcube) on any device, behind your server's single sign-on
       • Each address sends through its own provider's SMTP, so SPF and DMARC stay valid
       • IMAPS for Thunderbird and phone mail apps
@@ -296,20 +310,20 @@ x-compose-app:
       • AI access (MCP) through Beacon: search and read mail, calendar, contacts —
         read-only by default; drafts only, never sends
 
-      MailHub does not receive mail for a domain by itself (no MX): it collects from the
-      providers you keep using.
-
-      MailHub works on copies: a message deleted or moved here stays as it is at the
-      provider. To work on each provider's mailbox live instead (two-way, like
-      Thunderbird), see **Cypht**; for a light single-mailbox webmail, **SnappyMail**.
+      MailHub does not receive mail for a domain by itself (no MX): it works with the
+      providers you keep using. For a light single-mailbox webmail, see **SnappyMail**;
+      for a live web client without a local copy, **Cypht**.
     fr_fr: |
       MailHub rassemble les comptes mail que vous avez déjà — Gmail, la boîte de votre
       domaine, tout fournisseur IMAP — dans une seule boîte sur votre serveur, et répond
       depuis la bonne adresse.
 
       **Ce qu'il fait**
-      • Relève chaque compte en IMAP (uniquement IMAP, jamais POP) dans une boîte unique ;
-        le fournisseur garde sa copie
+      • Garde une copie de chaque boîte sur votre serveur, tous les dossiers, uniquement en
+        IMAP : lisez, déplacez et supprimez comme d'habitude, la même chose est faite chez
+        le fournisseur, qui reste la référence (rien d'autre n'y est jamais modifié)
+      • Vues combinées sur tous les comptes : Toutes les boîtes, Non lus, Suivis — rapides,
+        avec recherche plein texte
       • Webmail (Roundcube) sur tous vos appareils, derrière la connexion unique du serveur
       • Chaque adresse envoie par le SMTP de son fournisseur : SPF et DMARC restent valides
       • IMAPS pour Thunderbird et les applis mail du téléphone
@@ -318,13 +332,9 @@ x-compose-app:
       • Accès IA (MCP) via Beacon : chercher et lire les mails, agenda, contacts —
         lecture seule par défaut ; brouillons seulement, jamais d'envoi
 
-      MailHub ne reçoit pas de mail pour un domaine (pas de MX) : il relève chez les
-      fournisseurs que vous gardez.
-
-      MailHub travaille sur des copies : un mail supprimé ou déplacé ici reste tel quel
-      chez le fournisseur. Pour travailler en direct sur la boîte de chaque fournisseur
-      (dans les deux sens, comme Thunderbird), voir **Cypht** ; pour un webmail léger
-      d'une boîte à la fois, **SnappyMail**.
+      MailHub ne reçoit pas de mail pour un domaine (pas de MX) : il travaille avec les
+      fournisseurs que vous gardez. Pour un webmail léger d'une boîte à la fois, voir
+      **SnappyMail** ; pour un webmail en direct sans copie locale, **Cypht**.
   developer: Yundera
   category: Email
   icon: icon.png
@@ -347,18 +357,15 @@ x-compose-app:
     - path: /DATA/AppData/$AppID/roundcube/db
       user: "33"                        # www-data
       group: "33"
-    # getmail runs as uid 33, www-data in the webmail, which writes the accounts
-    # (they hold the providers' app passwords, hence 0700). Recursive: account
-    # files dropped in by hand, and installs from before 0.2.0 (uid 1000).
-    - path: /DATA/AppData/$AppID/getmail/accounts
+    # The webmail (www-data, 33) writes the account files, which hold the
+    # providers' app passwords, hence 0700; mailhub-mirror reads them as root.
+    - path: /DATA/AppData/$AppID/mirror/accounts
       user: "33"
       group: "33"
       mode: "0700"
       recursive: true
-    - path: /DATA/AppData/$AppID/getmail/state
-      user: "33"
-      group: "33"
-      recursive: true
+    # The mirror's generated config and the per-account status the page shows.
+    - path: /DATA/AppData/$AppID/mirror/state
     - path: /DATA/AppData/$AppID/baikal/config
       user: "101"                       # the Baïkal image's nginx (its entrypoint chowns to it)
       group: "101"
@@ -368,9 +375,9 @@ x-compose-app:
   # Backups: Maison snapshots the whole app folder (stopping the app for the short
   # second pass, so the SQLite DBs and Maildir are consistent). Nothing here is a
   # regenerable cache, so nothing is excluded: mail/, baikal/data/, roundcube/db/,
-  # .env (the secrets, including the key Roundcube encrypts SMTP passwords with)
-  # and getmail/state/ (which messages were already fetched — without it, every
-  # message still on a provider is fetched again).
+  # .env (the secrets, including the key Roundcube encrypts SMTP passwords with).
+  # mail/live/ is the providers' mail, copied: a restore without it simply copies
+  # it again (mbsync keeps its state inside each folder, so the two travel together).
   # App-managed config, re-rendered on every up so an update reaches existing
   # installs (seed/ alone is create-if-absent). Edit the store copy, not these.
   # The IMAPS certificate (see mailhub-imap). Maison picks the host, keeps it while
@@ -388,6 +395,10 @@ x-compose-app:
       mode: "0644"
     - path: /DATA/AppData/$AppID/dovecot/mailhub.conf
       from: dovecot/mailhub.conf
+      ensure: always
+      mode: "0644"
+    - path: /DATA/AppData/$AppID/dovecot/mailhub-replay.lua
+      from: dovecot/mailhub-replay.lua
       ensure: always
       mode: "0644"
     - path: /DATA/AppData/$AppID/baikal/nginx.conf
@@ -473,10 +484,15 @@ x-compose-app:
       **Adding your mail accounts**
       Webmail → Settings → *Mail accounts*: pick the provider (Gmail, Namecheap
       Private Email, or another one), enter the address and an app password. MailHub
-      tests the login, starts fetching within a minute, and sets up the address so
-      your replies leave through that provider. MailHub only reads over IMAP and never
-      deletes anything at the provider. Each address gets its own folder, named
-      after it (Outlook-style).
+      tests the login and sets up the address so your replies leave through that
+      provider. Its folders appear under *Live › <address>* within a minute; a big
+      mailbox takes a while to copy the first time (the page shows the progress).
+      *Virtual › All inboxes*, *Unread* and *Flagged* combine every account.
+
+      What you do in the Live folders (read, flag, move, delete) is done the same way
+      at the provider, over IMAP; nothing else is ever changed there. Moving a message
+      out of Live into one of your own folders removes it from the provider: it is then
+      kept on this server only. Removing an account deletes only this server's copy.
 
       **Calendar and contacts** are built in — nothing to set up. To keep them on
       another CalDAV/CardDAV server (Nextcloud…), Webmail → Settings → *Calendar &
@@ -512,10 +528,17 @@ x-compose-app:
       **Ajouter vos comptes mail**
       Webmail → Paramètres → *Comptes mail* : choisissez le fournisseur (Gmail,
       Namecheap Private Email ou un autre), saisissez l'adresse et un mot de passe
-      d'application. MailHub teste la connexion, commence la relève dans la minute et
-      configure l'adresse pour que vos réponses partent via ce fournisseur. MailHub lit
-      uniquement en IMAP et ne supprime jamais rien chez le fournisseur.
-      Chaque adresse a son propre dossier, à son nom (comme Outlook).
+      d'application. MailHub teste la connexion et configure l'adresse pour que vos
+      réponses partent via ce fournisseur. Ses dossiers apparaissent sous
+      *Live › <adresse>* dans la minute ; une grosse boîte met un moment à être copiée la
+      première fois (la page affiche l'avancement). *Virtual › All inboxes*, *Unread* et
+      *Flagged* combinent tous les comptes.
+
+      Ce que vous faites dans les dossiers Live (lire, marquer, déplacer, supprimer) est
+      fait de la même façon chez le fournisseur, en IMAP ; rien d'autre n'y est jamais
+      modifié. Déplacer un mail hors de Live vers un de vos dossiers le retire du
+      fournisseur : il n'est alors gardé que sur ce serveur. Retirer un compte supprime
+      seulement la copie de ce serveur.
 
       **L'agenda et les contacts** sont intégrés — rien à configurer. Pour les garder
       sur un autre serveur CalDAV/CardDAV (Nextcloud…), Webmail → Paramètres →
@@ -551,8 +574,9 @@ x-casaos:
   description:
     en_us: |
       MailHub gathers the mail accounts you already have — Gmail, your domain's mailbox,
-      any IMAP provider — into one inbox on your server, and answers from the right address.
-      Webmail behind single sign-on, per-address SMTP, IMAPS, and built-in calendar,
+      any IMAP provider — on your server, and answers from the right address. A local
+      copy of every mailbox kept in step with the provider (IMAP only), combined views,
+      webmail behind single sign-on, per-address SMTP, IMAPS, and built-in calendar,
       invitations and contacts synced to your phone. No MX.
     fr_fr: |
       MailHub rassemble les comptes mail que vous avez déjà dans une seule boîte sur votre
@@ -564,4 +588,4 @@ x-casaos:
       en_us: |
         The mailbox login (webmail, IMAPS, calendar & contacts) is shown under Credentials.
         Phones: the IMAP and CalDAV/CardDAV addresses are shown in the tips after install.
-        Add the accounts to fetch in the webmail: Settings → Mail accounts.
+        Add your mail accounts in the webmail: Settings → Mail accounts.
