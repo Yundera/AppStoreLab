@@ -1,0 +1,238 @@
+name: roundcube
+# Roundcube — the classic webmail, as shipped: each user signs in with a mailbox's own
+# IMAP login at its provider, and mail stays there (two-way IMAP, no local copy).
+# Official image, SQLite for settings, contacts and identities; behind the server's
+# single sign-on. For several accounts in one place, see MailHub, Cypht or SnappyMail.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # SSO gate in front of the webmail.
+  roundcube-proxy:
+    image: ghcr.io/yundera/appshield:3.2.0
+    container_name: roundcube
+    hostname: roundcube
+    restart: unless-stopped
+    cpu_shares: 80
+    logging: *logging
+    user: "0:0"
+    expose:
+      - 80
+    environment:
+      BACKEND_HOST: roundcube-web
+      BACKEND_PORT: "80"
+      LISTEN_PORT: "80"
+      OIDC_REGISTRAR_URL: "http://auth-registrar:9092"
+      REDIRECT_HOST_SUFFIXES: "${APP_HOST_SUFFIXES:-${APP_DOMAIN}}"
+    # AppShield's image has no shell or HTTP client to probe itself: no healthcheck.
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    depends_on:
+      - roundcube-web
+    networks:
+      - pcs
+      - roundcube-internal
+
+  roundcube-web:
+    image: roundcube/roundcubemail:1.7.5-apache
+    container_name: roundcube-web
+    restart: unless-stopped
+    cpu_shares: 80
+    logging: *logging
+    expose:
+      - 80
+    environment:
+      ROUNDCUBEMAIL_DB_TYPE: sqlite
+      ROUNDCUBEMAIL_DES_KEY: "${ROUNDCUBE_DES_KEY}"
+      ROUNDCUBEMAIL_PLUGINS: archive,zipdownload,markasjunk,newmail_notifier,attachment_reminder
+      ROUNDCUBEMAIL_SKIN: elastic
+      ROUNDCUBEMAIL_UPLOAD_MAX_FILESIZE: 25M
+      # The providers on the login page are in roundcube/config/roundcube.inc.php;
+      # the user's own one, asked at install, is added first. (Not named ROUNDCUBE_*:
+      # Roundcube reads ROUNDCUBE_<SETTING> as an override of that setting.)
+      PROVIDER_IMAP_HOST: "${PROVIDER_IMAP_HOST:-}"
+      PROVIDER_SMTP_HOST: "${PROVIDER_SMTP_HOST:-}"
+      PROVIDER_NAME: "${PROVIDER_NAME:-}"
+      TZ: Etc/UTC
+    volumes:
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/db:/var/roundcube/db
+      - ${DATA_ROOT:-/DATA}/AppData/$AppID/config:/var/roundcube/config:ro
+    # The login page: Apache + PHP + Roundcube answering. First start copies the
+    # app into place, hence the start period.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1/"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    # Reaches the providers' IMAP/SMTP; nothing else of the box.
+    networks:
+      - roundcube-internal
+
+networks:
+  pcs:
+    name: ${APP_NET:-pcs}
+    external: true
+  roundcube-internal:
+    driver: bridge
+
+x-compose-app:
+  schema_version: 2
+  version: "1.7.5"
+  routes:
+    - { service: roundcube-proxy, name: roundcube, upstream-port: 80 }
+  id: roundcube
+  title:
+    en_us: Roundcube
+  tagline:
+    en_us: The classic webmail, for the mail account you already have.
+    fr_fr: Le webmail classique, pour le compte mail que vous avez déjà.
+  description:
+    en_us: |
+      Roundcube is the long-standing open-source webmail, here as shipped. Sign in with
+      your mailbox's own login — Gmail, your domain's mailbox, any IMAP provider — and
+      read and send from your server. Mail stays at the provider: read, move and delete
+      stay in sync (IMAP), nothing is copied.
+
+      **What it does**
+      • A full webmail on desktop and phone (Elastic skin, light and dark)
+      • Gmail, Namecheap Private Email, Yahoo, iCloud and Fastmail on the login page;
+        your own provider can be added at install
+      • Each user sends through their provider's own SMTP
+      • Contacts, identities and signatures, archive and spam buttons, attachment reminder
+      • Behind your server's single sign-on
+
+      One mailbox per login. To gather several accounts in one place, see **MailHub**
+      (Roundcube with a local copy of every account, combined views, calendar and AI
+      access), **Cypht** or **SnappyMail**.
+    fr_fr: |
+      Roundcube est le webmail libre de référence, ici tel quel. Connectez-vous avec
+      l'identifiant de votre boîte — Gmail, la boîte de votre domaine, tout fournisseur
+      IMAP — et lisez et envoyez depuis votre serveur. Les mails restent chez le
+      fournisseur : lecture, déplacement et suppression restent synchronisés (IMAP), rien
+      n'est copié.
+
+      **Ce qu'il fait**
+      • Un webmail complet sur ordinateur et téléphone (thème Elastic, clair et sombre)
+      • Gmail, Namecheap Private Email, Yahoo, iCloud et Fastmail sur la page de connexion ;
+        votre propre fournisseur peut être ajouté à l'installation
+      • Chacun envoie par le SMTP de son fournisseur
+      • Contacts, identités et signatures, boutons archive et spam, rappel de pièce jointe
+      • Derrière la connexion unique de votre serveur
+
+      Une boîte par identifiant. Pour rassembler plusieurs comptes, voir **MailHub**
+      (Roundcube avec une copie locale de chaque compte, vues combinées, agenda et accès
+      IA), **Cypht** ou **SnappyMail**.
+  developer: Roundcube
+  category: Email
+  icon: icon.png
+  screenshots:
+    - screenshot-1.png
+    - screenshot-2.png
+  architectures:
+    - amd64
+    - arm64
+  accounts:
+    - provider: An email provider with IMAP (Gmail, Namecheap Private Email, your domain's host…)
+  inputs:
+    - env: PROVIDER_IMAP_HOST
+      label:
+        en_us: "Your own provider's IMAP server (optional), e.g. ssl://mail.example.com:993"
+        fr_fr: "Serveur IMAP de votre fournisseur (facultatif), ex. ssl://mail.example.com:993"
+      required: false
+    - env: PROVIDER_SMTP_HOST
+      label:
+        en_us: "Its SMTP server (optional), e.g. ssl://mail.example.com:465 or tls://mail.example.com:587"
+        fr_fr: "Son serveur SMTP (facultatif), ex. ssl://mail.example.com:465 ou tls://mail.example.com:587"
+      required: false
+    - env: PROVIDER_NAME
+      label:
+        en_us: "Its name on the login page (optional)"
+        fr_fr: "Son nom sur la page de connexion (facultatif)"
+      required: false
+  secrets:
+    ROUNDCUBE_DES_KEY: alnum:24        # encrypts the session's IMAP password
+  folders:
+    - path: /DATA/AppData/$AppID/db
+      user: "33"                       # www-data
+      group: "33"
+  files:
+    - path: /DATA/AppData/$AppID/config/roundcube.inc.php
+      from: config/roundcube.inc.php
+      ensure: always
+      mode: "0644"
+  # Backups: Maison snapshots the app folder: db/ holds each user's settings,
+  # contacts and identities. Mail stays at the providers.
+  tips:
+    en_us: |
+      **Signing in**
+      Open the app, sign in with your server account, then pick your provider and log
+      in with your mailbox's address and password. Gmail and Yahoo need an app password
+      (Gmail: myaccount.google.com/apppasswords, with 2-Step Verification on).
+
+      **Another provider**: give its IMAP and SMTP servers in the install dialog; they
+      can be changed later in the app's settings. Outlook.com / Hotmail mailboxes need
+      Microsoft sign-in (OAuth), which this app does not set up.
+
+      Each mailbox is its own login; your settings, contacts and identities are kept per
+      mailbox on this server.
+    fr_fr: |
+      **Connexion**
+      Ouvrez l'app, connectez-vous avec votre compte serveur, puis choisissez votre
+      fournisseur et entrez l'adresse et le mot de passe de votre boîte. Gmail et Yahoo
+      demandent un mot de passe d'application (Gmail : myaccount.google.com/apppasswords,
+      avec la validation en deux étapes).
+
+      **Un autre fournisseur** : indiquez ses serveurs à l'installation. Les boîtes
+      Outlook.com / Hotmail demandent la connexion Microsoft (OAuth), que cette app ne
+      configure pas.
+
+      Chaque boîte est un identifiant à part ; réglages, contacts et identités sont gardés
+      par boîte sur ce serveur.
+
+x-casaos:
+  store_app_id: roundcube
+  architectures:
+    - amd64
+    - arm64
+  main: roundcube-proxy
+  webui_port: 80
+  index: /
+  category: Email
+  tags: ["email", "productivity"]
+  developer: Roundcube
+  icon: icon.png
+  screenshot_link:
+    - screenshot-1.png
+    - screenshot-2.png
+  title:
+    en_us: Roundcube
+  tagline:
+    en_us: The classic webmail, for the mail account you already have.
+    fr_fr: Le webmail classique, pour le compte mail que vous avez déjà.
+  description:
+    en_us: |
+      The long-standing open-source webmail, as shipped: sign in with your mailbox's own
+      IMAP login, mail stays at the provider. Gmail, Namecheap Private Email, Yahoo,
+      iCloud and Fastmail ready, your own provider at install. Behind your server's
+      single sign-on.
+    fr_fr: |
+      Le webmail libre de référence, tel quel : connexion avec l'identifiant IMAP de votre
+      boîte, les mails restent chez le fournisseur. Gmail, Namecheap Private Email, Yahoo,
+      iCloud et Fastmail prêts, votre fournisseur à l'installation. Derrière la connexion
+      unique du serveur.
+  tips:
+    before_install:
+      en_us: |
+        Sign in to the webmail with your mailbox's own address and password. For a provider
+        not on the list, give its IMAP and SMTP servers below.

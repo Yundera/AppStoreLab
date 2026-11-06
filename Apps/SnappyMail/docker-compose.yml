@@ -131,6 +131,8 @@ x-compose-app:
   screenshots:
     - screenshot-1.png
     - screenshot-2.png
+  accounts:
+    - provider: An email provider with IMAP (Gmail, Namecheap Private Email, your domain's host…)
   architectures:
     - amd64
     - arm64
