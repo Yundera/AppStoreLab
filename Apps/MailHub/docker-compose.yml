@@ -268,7 +268,7 @@ networks:
 
 x-compose-app:
   schema_version: 2
-  version: "0.1.0"
+  version: "0.3.2"
   # The first route is the web UI (webmail, behind SSO). The second is the
   # CalDAV/CardDAV endpoint for phones. IMAPS is a published port, not a route.
   routes:
@@ -297,6 +297,10 @@ x-compose-app:
 
       MailHub does not receive mail for a domain by itself (no MX): it collects from the
       providers you keep using.
+
+      MailHub works on copies: a message deleted or moved here stays as it is at the
+      provider. To work on each provider's mailbox live instead (two-way, like
+      Thunderbird), see **Cypht**; for a light single-mailbox webmail, **SnappyMail**.
     fr_fr: |
       MailHub rassemble les comptes mail que vous avez déjà — Gmail, la boîte de votre
       domaine, tout fournisseur IMAP — dans une seule boîte sur votre serveur, et répond
@@ -314,11 +318,17 @@ x-compose-app:
 
       MailHub ne reçoit pas de mail pour un domaine (pas de MX) : il relève chez les
       fournisseurs que vous gardez.
+
+      MailHub travaille sur des copies : un mail supprimé ou déplacé ici reste tel quel
+      chez le fournisseur. Pour travailler en direct sur la boîte de chaque fournisseur
+      (dans les deux sens, comme Thunderbird), voir **Cypht** ; pour un webmail léger
+      d'une boîte à la fois, **SnappyMail**.
   developer: Yundera
   category: Email
   icon: icon.png
   screenshots:
     - screenshot-1.png
+    - screenshot-2.png
   architectures:
     - amd64
   # IMAPS (993) is published on the host's public address.
@@ -531,6 +541,7 @@ x-casaos:
   icon: icon.png
   screenshot_link:
     - screenshot-1.png
+    - screenshot-2.png
   title:
     en_us: MailHub
   tagline:
