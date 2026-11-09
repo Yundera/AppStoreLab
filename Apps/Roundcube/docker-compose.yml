@@ -143,7 +143,7 @@ x-compose-app:
     - amd64
     - arm64
   accounts:
-    - provider: An email provider with IMAP (Gmail, Namecheap Private Email, your domain's host…)
+    - provider: Email (IMAP)
   inputs:
     - env: PROVIDER_IMAP_HOST
       label:
